@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import DashboardPage from "./components/DashboardPage";
 import UploadSurveyPage from "./components/UploadSurveyPage";
 import SettingsPage from "./components/SettingsPage";
+import AuthPage from "./components/AuthPage"
 import "./index.css"; // your Tailwind base styles
 
 import DashboardLayout from "./components/DashboardLayout";
@@ -13,6 +14,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <BrowserRouter>
       <Routes>
         {/* All routes share the persistent layout */}
+        <Route path="/login" element={ <AuthPage/> } />
         <Route path="/" element={<DashboardLayout />}>
           <Route index element={<DashboardPage />} />
           <Route path="upload" element={<UploadSurveyPage />} />
