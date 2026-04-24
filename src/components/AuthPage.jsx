@@ -1,4 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { auth } from "../firebase";
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup
+} from "firebase/auth";
 import {
   HeartHandshake,
   Mail,
@@ -11,14 +19,14 @@ import {
   Globe,
 } from "lucide-react";
 
-// ── Brand stats shown on the left panel ───────────────────────────────────────
+
 const STATS = [
   { icon: Users, value: "12,400+", label: "Beneficiaries reached" },
   { icon: BarChart3, value: "3,200+", label: "Surveys processed" },
   { icon: Globe, value: "40+", label: "Communities served" },
 ];
 
-// ── Google icon (SVG inline — lucide doesn't include brand icons) ─────────────
+
 function GoogleIcon() {
   return (
     <svg viewBox="0 0 24 24" className="w-4 h-4" aria-hidden="true">
@@ -42,7 +50,7 @@ function GoogleIcon() {
   );
 }
 
-// ── Input field ───────────────────────────────────────────────────────────────
+
 function InputField({ label, type = "text", placeholder, icon: Icon, value, onChange, suffix }) {
   return (
     <div className="space-y-1.5">
@@ -70,33 +78,84 @@ function InputField({ label, type = "text", placeholder, icon: Icon, value, onCh
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-  const handleChange = (field) => (e) =>
+  const handleChange = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
+    setError("");
+  };
 
-  const handleSubmit = () => {
+  // ── Firebase Email/Password Handler ──
+  const handleSubmit = async (e) => {
+    if (e) e.preventDefault();
+    if (!form.email || !form.password) {
+      setError("Please enter both email and password.");
+      return;
+    }
+    
     setLoading(true);
-    setTimeout(() => setLoading(false), 1500);
+    setError("");
+
+    try {
+      if (isLogin) {
+        await signInWithEmailAndPassword(auth, form.email, form.password);
+      } else {
+        await createUserWithEmailAndPassword(auth, form.email, form.password);
+      }
+      navigate("/");
+    } catch (err) {
+      // Map Firebase errors to readable text
+      if (err.code === "auth/invalid-credential" || err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
+        setError("Invalid email or password.");
+      } else if (err.code === "auth/email-already-in-use") {
+        setError("An account with this email already exists.");
+      } else if (err.code === "auth/weak-password") {
+        setError("Password should be at least 6 characters.");
+      } else {
+        setError("An error occurred. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  const handleGoogle = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      navigate("/");
+    } catch (err) {
+      // Ignore error if user just closed the popup manually
+      if (err.code !== "auth/popup-closed-by-user") {
+        setError("Google sign-in failed. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-stone-50 font-sans">
 
-      {/* ── Left: Branded panel ── */}
+      
       <div className="relative hidden lg:flex flex-col justify-between w-[44%] shrink-0 bg-teal-700 px-12 py-12 overflow-hidden">
 
-        {/* Background texture rings */}
+       
         <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-teal-600 opacity-40" />
         <div className="absolute top-1/2 -right-24 w-72 h-72 rounded-full bg-teal-800 opacity-30" />
         <div className="absolute -bottom-20 left-12 w-56 h-56 rounded-full bg-teal-600 opacity-20" />
 
-        {/* Logo */}
+       
         <div className="relative flex items-center gap-3 z-10">
           <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/15 text-white backdrop-blur-sm">
             <HeartHandshake size={22} strokeWidth={1.8} />
@@ -107,7 +166,7 @@ export default function AuthPage() {
           </div>
         </div>
 
-        {/* Hero copy */}
+        
         <div className="relative z-10 space-y-6">
           <div className="space-y-3">
             <span className="inline-block px-3 py-1 bg-white/15 text-teal-100 text-[11px] font-semibold rounded-full tracking-widest uppercase">
@@ -121,7 +180,7 @@ export default function AuthPage() {
             </p>
           </div>
 
-          {/* Stats */}
+          
           <div className="grid grid-cols-3 gap-4 pt-2">
             {STATS.map(({ icon: Icon, value, label }) => (
               <div key={label} className="space-y-1">
@@ -133,7 +192,7 @@ export default function AuthPage() {
           </div>
         </div>
 
-        {/* Footer quote */}
+        
         <div className="relative z-10">
           <p className="text-xs text-teal-300 italic">
             "We rise by lifting others."
@@ -142,11 +201,11 @@ export default function AuthPage() {
         </div>
       </div>
 
-      {/* ── Right: Auth form ── */}
+      
       <div className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm space-y-8">
 
-          {/* Mobile logo */}
+          
           <div className="flex lg:hidden items-center gap-2 justify-center">
             <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-teal-600 text-white">
               <HeartHandshake size={20} strokeWidth={1.8} />
@@ -154,7 +213,7 @@ export default function AuthPage() {
             <p className="text-base font-bold text-stone-800 tracking-tight">ImpactBase</p>
           </div>
 
-          {/* Heading */}
+          
           <div className="space-y-1">
             <h2 className="text-2xl font-bold text-stone-800 tracking-tight">
               {isLogin ? "Welcome back" : "Create your account"}
@@ -166,12 +225,16 @@ export default function AuthPage() {
             </p>
           </div>
 
-          {/* Toggle tabs */}
+          
           <div className="flex bg-stone-100 rounded-xl p-1">
             {["Sign In", "Create Account"].map((label, i) => (
               <button
                 key={label}
-                onClick={() => { setIsLogin(i === 0); setForm({ email: "", password: "" }); }}
+                onClick={() => { 
+                  setIsLogin(i === 0); 
+                  setForm({ email: "", password: "" }); 
+                  setError(""); 
+                }}
                 className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
                   isLogin === (i === 0)
                     ? "bg-white text-teal-700 shadow-sm"
@@ -183,8 +246,18 @@ export default function AuthPage() {
             ))}
           </div>
 
-          {/* Form */}
-          <div className="space-y-4">
+          
+          <form 
+            onSubmit={(e) => handleSubmit(e)} 
+            className="space-y-4"
+          >
+            
+            {error && (
+              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
+                {error}
+              </div>
+            )}
+
             <InputField
               label="Email address"
               type="email"
@@ -213,15 +286,15 @@ export default function AuthPage() {
 
             {isLogin && (
               <div className="text-right">
-                <button className="text-xs font-semibold text-teal-600 hover:text-teal-700 transition-colors">
+                <button type="button" className="text-xs font-semibold text-teal-600 hover:text-teal-700 transition-colors">
                   Forgot password?
                 </button>
               </div>
             )}
 
-            {/* Submit */}
+           
             <button
-              onClick={handleSubmit}
+              type="submit"
               disabled={loading}
               className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white shadow-sm transition-all duration-150
                 ${loading ? "bg-teal-400 cursor-wait" : "bg-teal-600 hover:bg-teal-700 active:scale-95"}`}
@@ -242,25 +315,30 @@ export default function AuthPage() {
               )}
             </button>
 
-            {/* Divider */}
-            <div className="flex items-center gap-3">
+            
+            <div className="flex items-center gap-3 py-1">
               <div className="flex-1 h-px bg-stone-200" />
               <span className="text-xs text-stone-400 font-medium">or</span>
               <div className="flex-1 h-px bg-stone-200" />
             </div>
 
-            {/* Google */}
-            <button className="w-full flex items-center justify-center gap-2.5 py-2.5 rounded-xl border border-stone-200 bg-white text-sm font-semibold text-stone-600 hover:bg-stone-50 hover:border-stone-300 active:scale-95 transition-all duration-150 shadow-sm">
+            
+            <button 
+              type="button"
+              onClick={handleGoogle}
+              className="w-full flex items-center justify-center gap-2.5 py-2.5 rounded-xl border border-stone-200 bg-white text-sm font-semibold text-stone-600 hover:bg-stone-50 hover:border-stone-300 active:scale-95 transition-all duration-150 shadow-sm"
+            >
               <GoogleIcon />
               Continue with Google
             </button>
-          </div>
+          </form>
 
-          {/* Footer toggle */}
+          
           <p className="text-center text-xs text-stone-400">
             {isLogin ? "Don't have an account? " : "Already have an account? "}
             <button
-              onClick={() => { setIsLogin((v) => !v); setForm({ email: "", password: "" }); }}
+              type="button"
+              onClick={() => { setIsLogin((v) => !v); setForm({ email: "", password: "" }); setError(""); }}
               className="text-teal-600 font-semibold hover:text-teal-700 transition-colors"
             >
               {isLogin ? "Create one" : "Sign in"}
