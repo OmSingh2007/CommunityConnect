@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback } from "react";
+import { db, auth } from "../firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import {
   CloudUpload,
   FileImage,
@@ -7,17 +9,9 @@ import {
   Sparkles,
   UploadCloud,
   ImagePlus,
+  AlertCircle
 } from "lucide-react";
 
-// ── Mock pre-attached file (simulates a file already selected) ─────────────────
-const MOCK_FILE = {
-  name: "survey_page_1.jpg",
-  size: "2.4 MB",
-  type: "image/jpeg",
-  preview: null, // no real preview in mock
-};
-
-// ── File Chip ──────────────────────────────────────────────────────────────────
 function FileChip({ file, onRemove }) {
   return (
     <div className="flex items-center gap-3 bg-teal-50 border border-teal-200 rounded-xl px-4 py-3 group">
@@ -42,15 +36,14 @@ function FileChip({ file, onRemove }) {
   );
 }
 
-// ── Main Page ──────────────────────────────────────────────────────────────────
 export default function UploadSurveyPage() {
-  const [files, setFiles] = useState([MOCK_FILE]);
+  const [files, setFiles] = useState([]); 
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const inputRef = useRef(null);
 
-  // ── Drag handlers ────────────────────────────────────────────────────────────
   const handleDragOver = useCallback((e) => {
     e.preventDefault();
     setIsDragging(true);
@@ -68,16 +61,17 @@ export default function UploadSurveyPage() {
       f.type.startsWith("image/")
     );
     if (dropped.length === 0) return;
+    
     const mapped = dropped.map((f) => ({
       name: f.name,
       size: (f.size / (1024 * 1024)).toFixed(1) + " MB",
       type: f.type,
+      originalFile: f 
     }));
     setFiles((prev) => [...prev, ...mapped]);
     setSubmitted(false);
   }, []);
 
-  // ── File input ───────────────────────────────────────────────────────────────
   const handleInputChange = (e) => {
     const picked = Array.from(e.target.files).filter((f) =>
       f.type.startsWith("image/")
@@ -86,6 +80,7 @@ export default function UploadSurveyPage() {
       name: f.name,
       size: (f.size / (1024 * 1024)).toFixed(1) + " MB",
       type: f.type,
+      originalFile: f 
     }));
     setFiles((prev) => [...prev, ...mapped]);
     setSubmitted(false);
@@ -95,31 +90,75 @@ export default function UploadSurveyPage() {
   const removeFile = (index) =>
     setFiles((prev) => prev.filter((_, i) => i !== index));
 
-  // ── Mock submit ──────────────────────────────────────────────────────────────
-  const handleSubmit = () => {
-    if (files.length === 0 || isSubmitting) return;
+  const handleUpload = async () => {
+    if (files.length === 0) return;
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    setError("");
+    setSubmitted(false);
+    
+    try {
+      for (const item of files) {
+        
+        const formData = new FormData();
+        formData.append("file", item.originalFile); 
+        
+        formData.append("upload_preset", "Community_Connect___surveys"); 
+
+        const cloudinaryResponse = await fetch(
+          `https://api.cloudinary.com/v1_1/do6hn4q3u/image/upload`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        if (!cloudinaryResponse.ok) {
+          throw new Error(`Failed to upload ${item.name}`);
+        }
+
+        const cloudinaryData = await cloudinaryResponse.json();
+        const secureImageUrl = cloudinaryData.secure_url; 
+
+        await addDoc(collection(db, "surveys"), {
+          imageUrl: secureImageUrl,
+          fileName: item.name,
+          uploadedAt: serverTimestamp(),
+          status: "Pending AI Processing", 
+          category: "Uncategorized",
+          location: "Pending Extraction",
+          urgency: "Pending",
+          uploaderEmail: auth.currentUser?.email
+        });
+      }
+
       setSubmitted(true);
-      setFiles([]);
-    }, 2200);
+      setFiles([]); 
+    } catch (err) {
+      console.error("Upload failed:", err);
+      setError("Failed to upload surveys. Please check your connection and try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
-      {/* ── Page heading ── */}
       <div>
         <h2 className="text-xl font-bold text-stone-800 tracking-tight">
           Upload Survey
         </h2>
         <p className="text-sm text-stone-400 mt-1">
-          Upload photos of handwritten paper surveys for AI extraction and
-          processing.
+          Upload photos of handwritten paper surveys for AI extraction and processing.
         </p>
       </div>
 
-      {/* ── Info banner ── */}
+      {error && (
+        <div className="flex items-center gap-2 p-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl">
+          <AlertCircle size={18} />
+          {error}
+        </div>
+      )}
+
       <div className="flex items-start gap-3 bg-sky-50 border border-sky-200 rounded-xl px-4 py-3.5">
         <Sparkles size={16} className="text-sky-500 mt-0.5 shrink-0" />
         <p className="text-xs text-sky-700 leading-relaxed">
@@ -130,7 +169,6 @@ export default function UploadSurveyPage() {
         </p>
       </div>
 
-      {/* ── Drop Zone ── */}
       <div
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -143,7 +181,6 @@ export default function UploadSurveyPage() {
               : "border-stone-200 bg-stone-50 hover:border-teal-300 hover:bg-teal-50/40"
           }`}
       >
-        {/* Hidden file input */}
         <input
           ref={inputRef}
           type="file"
@@ -153,7 +190,6 @@ export default function UploadSurveyPage() {
           onChange={handleInputChange}
         />
 
-        {/* Icon */}
         <div
           className={`flex items-center justify-center w-16 h-16 rounded-2xl transition-colors duration-200 ${
             isDragging ? "bg-teal-100 text-teal-600" : "bg-white text-stone-300 border border-stone-200"
@@ -162,7 +198,6 @@ export default function UploadSurveyPage() {
           <CloudUpload size={32} strokeWidth={1.5} />
         </div>
 
-        {/* Copy */}
         <div className="text-center space-y-1">
           <p className="text-sm font-semibold text-stone-600">
             {isDragging
@@ -178,7 +213,6 @@ export default function UploadSurveyPage() {
           </p>
         </div>
 
-        {/* Accepted types */}
         <div className="flex items-center gap-2 mt-1">
           {["JPG", "PNG", "WEBP"].map((ext) => (
             <span
@@ -190,13 +224,11 @@ export default function UploadSurveyPage() {
           ))}
         </div>
 
-        {/* Drag highlight overlay */}
         {isDragging && (
           <div className="absolute inset-0 rounded-2xl bg-teal-400/5 pointer-events-none" />
         )}
       </div>
 
-      {/* ── Attached Files ── */}
       {files.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -218,7 +250,6 @@ export default function UploadSurveyPage() {
         </div>
       )}
 
-      {/* ── Success state ── */}
       {submitted && (
         <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-5 py-4">
           <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />
@@ -233,7 +264,6 @@ export default function UploadSurveyPage() {
         </div>
       )}
 
-      {/* ── Action row ── */}
       <div className="flex items-center justify-between pt-2 border-t border-stone-100">
         <button
           onClick={() => inputRef.current?.click()}
@@ -244,7 +274,7 @@ export default function UploadSurveyPage() {
         </button>
 
         <button
-          onClick={handleSubmit}
+          onClick={handleUpload}
           disabled={files.length === 0 || isSubmitting}
           className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-sm transition-all duration-150
             ${

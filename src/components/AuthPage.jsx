@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth } from "../firebase";
+import { auth, db } from "../firebase"; // Added db here
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup
 } from "firebase/auth";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore"; // Added Firestore methods
 import {
   HeartHandshake,
   Mail,
@@ -17,15 +18,15 @@ import {
   Users,
   BarChart3,
   Globe,
+  Building2, // Added icon
+  MapPin     // Added icon
 } from "lucide-react";
-
 
 const STATS = [
   { icon: Users, value: "12,400+", label: "Beneficiaries reached" },
   { icon: BarChart3, value: "3,200+", label: "Surveys processed" },
   { icon: Globe, value: "40+", label: "Communities served" },
 ];
-
 
 function GoogleIcon() {
   return (
@@ -49,7 +50,6 @@ function GoogleIcon() {
     </svg>
   );
 }
-
 
 function InputField({ label, type = "text", placeholder, icon: Icon, value, onChange, suffix }) {
   return (
@@ -78,11 +78,16 @@ function InputField({ label, type = "text", placeholder, icon: Icon, value, onCh
   );
 }
 
-
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [form, setForm] = useState({ email: "", password: "" });
+  // Added ngoName and region to the form state
+  const [form, setForm] = useState({ 
+    email: "", 
+    password: "", 
+    ngoName: "", 
+    region: "Mumbai Metropolitan Region" 
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -100,6 +105,12 @@ export default function AuthPage() {
       return;
     }
     
+    // Check for NGO Name if signing up
+    if (!isLogin && !form.ngoName) {
+      setError("Please enter your NGO Organisation Name.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -107,7 +118,18 @@ export default function AuthPage() {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, form.email, form.password);
       } else {
-        await createUserWithEmailAndPassword(auth, form.email, form.password);
+        // 1. Create the Auth account
+        const userCredential = await createUserWithEmailAndPassword(auth, form.email, form.password);
+        const user = userCredential.user;
+
+        // 2. Save their extra profile info to Firestore
+        await setDoc(doc(db, "users", user.uid), {
+          email: user.email,
+          ngoName: form.ngoName,
+          region: form.region,
+          role: "Program Manager",
+          createdAt: serverTimestamp()
+        });
       }
       navigate("/");
     } catch (err) {
@@ -126,16 +148,25 @@ export default function AuthPage() {
     }
   };
 
-
   const handleGoogle = async () => {
     setLoading(true);
     setError("");
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const userCred = await signInWithPopup(auth, provider);
+      
+      // If they use Google, ensure they have a basic profile in Firestore
+      // { merge: true } ensures we don't accidentally overwrite data if they already exist
+      await setDoc(doc(db, "users", userCred.user.uid), {
+        email: userCred.user.email,
+        ngoName: form.ngoName || "Google Auth User",
+        region: form.region || "Mumbai Metropolitan Region",
+        role: "Program Manager",
+        createdAt: serverTimestamp()
+      }, { merge: true });
+
       navigate("/");
     } catch (err) {
-      // Ignore error if user just closed the popup manually
       if (err.code !== "auth/popup-closed-by-user") {
         setError("Google sign-in failed. Please try again.");
       }
@@ -146,27 +177,22 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-stone-50 font-sans">
-
       
       <div className="relative hidden lg:flex flex-col justify-between w-[44%] shrink-0 bg-teal-700 px-12 py-12 overflow-hidden">
-
-       
         <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-teal-600 opacity-40" />
         <div className="absolute top-1/2 -right-24 w-72 h-72 rounded-full bg-teal-800 opacity-30" />
         <div className="absolute -bottom-20 left-12 w-56 h-56 rounded-full bg-teal-600 opacity-20" />
 
-       
         <div className="relative flex items-center gap-3 z-10">
           <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/15 text-white backdrop-blur-sm">
             <HeartHandshake size={22} strokeWidth={1.8} />
           </span>
           <div className="leading-tight">
-            <p className="text-base font-bold text-white tracking-tight">ImpactBase</p>
+            <p className="text-base font-bold text-white tracking-tight">CommunityConnect</p>
             <p className="text-[10px] font-semibold tracking-widest uppercase text-teal-200">NGO Portal</p>
           </div>
         </div>
 
-        
         <div className="relative z-10 space-y-6">
           <div className="space-y-3">
             <span className="inline-block px-3 py-1 bg-white/15 text-teal-100 text-[11px] font-semibold rounded-full tracking-widest uppercase">
@@ -176,11 +202,10 @@ export default function AuthPage() {
               Turning field surveys into <span className="text-teal-200">meaningful change.</span>
             </h1>
             <p className="text-sm text-teal-100 leading-relaxed max-w-xs">
-              ImpactBase helps NGOs digitise handwritten surveys with AI, track community needs in real time, and make data-driven decisions that matter.
+              CommunityConnect helps NGOs digitise handwritten surveys with AI, track community needs in real time, and make data-driven decisions that matter.
             </p>
           </div>
 
-          
           <div className="grid grid-cols-3 gap-4 pt-2">
             {STATS.map(({ icon: Icon, value, label }) => (
               <div key={label} className="space-y-1">
@@ -192,7 +217,6 @@ export default function AuthPage() {
           </div>
         </div>
 
-        
         <div className="relative z-10">
           <p className="text-xs text-teal-300 italic">
             "We rise by lifting others."
@@ -201,19 +225,16 @@ export default function AuthPage() {
         </div>
       </div>
 
-      
       <div className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm space-y-8">
-
           
           <div className="flex lg:hidden items-center gap-2 justify-center">
             <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-teal-600 text-white">
               <HeartHandshake size={20} strokeWidth={1.8} />
             </span>
-            <p className="text-base font-bold text-stone-800 tracking-tight">ImpactBase</p>
+            <p className="text-base font-bold text-stone-800 tracking-tight">CommunityConnect</p>
           </div>
 
-          
           <div className="space-y-1">
             <h2 className="text-2xl font-bold text-stone-800 tracking-tight">
               {isLogin ? "Welcome back" : "Create your account"}
@@ -225,14 +246,14 @@ export default function AuthPage() {
             </p>
           </div>
 
-          
           <div className="flex bg-stone-100 rounded-xl p-1">
             {["Sign In", "Create Account"].map((label, i) => (
               <button
                 key={label}
+                type="button"
                 onClick={() => { 
                   setIsLogin(i === 0); 
-                  setForm({ email: "", password: "" }); 
+                  setForm({ email: "", password: "", ngoName: "", region: "Mumbai Metropolitan Region" }); 
                   setError(""); 
                 }}
                 className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
@@ -246,26 +267,61 @@ export default function AuthPage() {
             ))}
           </div>
 
-          
           <form 
             onSubmit={(e) => handleSubmit(e)} 
             className="space-y-4"
           >
-            
             {error && (
               <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
                 {error}
               </div>
             )}
 
+            {/* --- NEW SIGN UP FIELDS --- */}
+            {!isLogin && (
+              <>
+                <InputField
+                  label="NGO Organisation Name"
+                  type="text"
+                  placeholder="e.g. Asha Foundation"
+                  icon={Building2}
+                  value={form.ngoName}
+                  onChange={handleChange("ngoName")}
+                />
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-stone-500 uppercase tracking-widest">
+                    Default Operating Region
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-300 pointer-events-none">
+                      <MapPin size={15} strokeWidth={1.8} />
+                    </span>
+                    <select
+                      value={form.region}
+                      onChange={handleChange("region")}
+                      className="w-full pl-10 pr-10 py-2.5 text-sm text-stone-700 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-300 focus:border-teal-400 hover:border-stone-300 transition-all duration-150 appearance-none"
+                    >
+                      <option value="Mumbai Metropolitan Region">Mumbai Metropolitan Region</option>
+                      <option value="Pune District">Pune District</option>
+                      <option value="Thane District">Thane District</option>
+                      <option value="Palghar District">Palghar District</option>
+                      <option value="Other / National">Other / National</option>
+                    </select>
+                  </div>
+                </div>
+              </>
+            )}
+
             <InputField
-              label="Email address"
+              label={!isLogin ? "Primary Contact Email" : "Email address"}
               type="email"
               placeholder="you@organisation.org"
               icon={Mail}
               value={form.email}
               onChange={handleChange("email")}
             />
+            
             <InputField
               label="Password"
               type={showPassword ? "text" : "password"}
@@ -292,7 +348,6 @@ export default function AuthPage() {
               </div>
             )}
 
-           
             <button
               type="submit"
               disabled={loading}
@@ -315,14 +370,12 @@ export default function AuthPage() {
               )}
             </button>
 
-            
             <div className="flex items-center gap-3 py-1">
               <div className="flex-1 h-px bg-stone-200" />
               <span className="text-xs text-stone-400 font-medium">or</span>
               <div className="flex-1 h-px bg-stone-200" />
             </div>
 
-            
             <button 
               type="button"
               onClick={handleGoogle}
@@ -333,12 +386,11 @@ export default function AuthPage() {
             </button>
           </form>
 
-          
           <p className="text-center text-xs text-stone-400">
             {isLogin ? "Don't have an account? " : "Already have an account? "}
             <button
               type="button"
-              onClick={() => { setIsLogin((v) => !v); setForm({ email: "", password: "" }); setError(""); }}
+              onClick={() => { setIsLogin((v) => !v); setForm({ email: "", password: "", ngoName: "", region: "Mumbai Metropolitan Region" }); setError(""); }}
               className="text-teal-600 font-semibold hover:text-teal-700 transition-colors"
             >
               {isLogin ? "Create one" : "Sign in"}
@@ -346,7 +398,7 @@ export default function AuthPage() {
           </p>
 
           <p className="text-center text-[11px] text-stone-300 leading-relaxed">
-            By continuing, you agree to ImpactBase's{" "}
+            By continuing, you agree to CommunityConnect's{" "}
             <span className="underline cursor-pointer hover:text-stone-500 transition-colors">Terms</span>{" "}
             and{" "}
             <span className="underline cursor-pointer hover:text-stone-500 transition-colors">Privacy Policy</span>.

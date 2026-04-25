@@ -1,174 +1,224 @@
-import { useState } from "react";
-import { Building2, Mail, MapPin, CheckCircle2, Save } from "lucide-react";
-
-const REGIONS = [
-  "Mumbai Metropolitan Region",
-  "Pune District",
-  "Nashik Division",
-  "Aurangabad Division",
-  "Nagpur Division",
-  "Konkan Division",
-  "Pan-India",
-];
-
-const INITIAL = {
-  orgName: "Asha Foundation",
-  email: "contact@ashafoundation.org",
-  region: "Mumbai Metropolitan Region",
-};
-
-function FieldWrapper({ label, hint, icon: Icon, children }) {
-  return (
-    <div className="space-y-1.5">
-      <label className="flex items-center gap-1.5 text-xs font-semibold text-stone-500 uppercase tracking-widest">
-        <Icon size={12} className="text-stone-400" />
-        {label}
-      </label>
-      {children}
-      {hint && <p className="text-[11px] text-stone-400 pl-0.5">{hint}</p>}
-    </div>
-  );
-}
+import { useState, useEffect } from "react";
+import { auth, db } from "../firebase";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { 
+  Building2, 
+  Mail, 
+  MapPin, 
+  Save, 
+  CheckCircle2, 
+  AlertCircle 
+} from "lucide-react";
 
 export default function SettingsPage() {
-  const [form, setForm] = useState(INITIAL);
-  const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const isDirty = JSON.stringify(form) !== JSON.stringify(INITIAL);
+  const [message, setMessage] = useState({ type: "", text: "" });
 
-  const handleChange = (field) => (e) => {
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
-    setSaved(false);
+  // 1. We need TWO states now. One for editing, one for memory.
+  const [profile, setProfile] = useState({
+    ngoName: "",
+    email: "",
+    region: "Mumbai Metropolitan Region",
+  });
+  const [originalProfile, setOriginalProfile] = useState(null);
+
+  // 2. Check if the current form matches our memory
+  const hasChanges = originalProfile && (
+    profile.ngoName !== originalProfile.ngoName ||
+    profile.region !== originalProfile.region
+  );
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      try {
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const fetchedData = {
+            ngoName: data.ngoName || "",
+            email: data.email || user.email,
+            region: data.region || "Mumbai Metropolitan Region",
+          };
+          
+          // Save the data to BOTH states when the page loads
+          setProfile(fetchedData);
+          setOriginalProfile(fetchedData);
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        setMessage({ type: "error", text: "Failed to load profile data." });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setProfile((prev) => ({ ...prev, [name]: value }));
+    setMessage({ type: "", text: "" });
   };
 
-  const handleSave = () => {
-    if (saving) return;
+  const handleSave = async () => {
+    // Extra safety: don't save if nothing changed
+    if (!hasChanges) return; 
+
     setSaving(true);
-    setTimeout(() => {
+    setMessage({ type: "", text: "" });
+
+    try {
+      const user = auth.currentUser;
+      if (!user) throw new Error("No user logged in");
+
+      const docRef = doc(db, "users", user.uid);
+      
+      await updateDoc(docRef, {
+        ngoName: profile.ngoName,
+        region: profile.region,
+      });
+
+      // IMPORTANT: Update our "memory" so the button goes back to grey!
+      setOriginalProfile(profile);
+      setMessage({ type: "success", text: "Preferences saved successfully!" });
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      setMessage({ type: "error", text: "Failed to save changes. Please try again." });
+    } finally {
       setSaving(false);
-      setSaved(true);
-    }, 1200);
+      setTimeout(() => setMessage({ type: "", text: "" }), 3000);
+    }
   };
 
-  const inputBase =
-    "w-full px-4 py-2.5 text-sm text-stone-700 bg-white border border-stone-200 rounded-xl placeholder:text-stone-300 " +
-    "focus:outline-none focus:ring-2 focus:ring-teal-300 focus:border-teal-400 transition-all duration-150 hover:border-stone-300";
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64 text-stone-400">
+        <div className="flex flex-col items-center gap-2">
+          <svg className="animate-spin w-6 h-6" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+          </svg>
+          <p className="text-sm font-medium">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-xl mx-auto space-y-8">
-      {/* Heading */}
+    <div className="max-w-3xl mx-auto space-y-8 pb-12">
+      
       <div>
-        <h2 className="text-xl font-bold text-stone-800 tracking-tight">Settings</h2>
-        <p className="text-sm text-stone-400 mt-1">
+        <h1 className="text-2xl font-bold text-stone-800 tracking-tight">Settings</h1>
+        <p className="text-stone-500 text-sm mt-1">
           Manage your organisation profile and regional preferences.
         </p>
       </div>
 
-      {/* Form card */}
-      <div className="bg-white border border-stone-200 rounded-2xl divide-y divide-stone-100 overflow-hidden">
-        {/* Section: Organisation */}
-        <div className="px-6 py-5">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400 mb-5">
-            Organisation
-          </p>
-          <div className="space-y-5">
-            <FieldWrapper
-              label="NGO Organisation Name"
-              icon={Building2}
-              hint="This name appears on all exported reports."
-            >
-              <input
-                type="text"
-                value={form.orgName}
-                onChange={handleChange("orgName")}
-                placeholder="e.g. Asha Foundation"
-                className={inputBase}
-              />
-            </FieldWrapper>
-
-            <FieldWrapper
-              label="Primary Contact Email"
-              icon={Mail}
-              hint="Used for system notifications and AI processing alerts."
-            >
-              <input
-                type="email"
-                value={form.email}
-                onChange={handleChange("email")}
-                placeholder="e.g. contact@ngo.org"
-                className={inputBase}
-              />
-            </FieldWrapper>
-          </div>
-        </div>
-
-        {/* Section: Regional */}
-        <div className="px-6 py-5">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400 mb-5">
-            Regional
-          </p>
-          <FieldWrapper
-            label="Default Operating Region"
-            icon={MapPin}
-            hint="Filters dashboard data to your primary field area."
-          >
-            <div className="relative">
-              <select
-                value={form.region}
-                onChange={handleChange("region")}
-                className={`${inputBase} appearance-none pr-10 cursor-pointer`}
-              >
-                {REGIONS.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
-              {/* Custom chevron */}
-              <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-stone-400">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path
-                    d="M2 4l4 4 4-4"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-            </div>
-          </FieldWrapper>
-        </div>
-      </div>
-
-      {/* Success banner */}
-      {saved && (
-        <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-5 py-3.5">
-          <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
-          <p className="text-sm font-semibold text-emerald-800">
-            Preferences saved successfully.
-          </p>
+      {message.text && (
+        <div className={`flex items-center gap-2 p-4 text-sm border rounded-xl transition-all ${
+          message.type === "success" 
+            ? "text-emerald-700 bg-emerald-50 border-emerald-200" 
+            : "text-rose-700 bg-rose-50 border-rose-200"
+        }`}>
+          {message.type === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+          {message.text}
         </div>
       )}
 
-      {/* Actions */}
-      <div className="flex items-center justify-between pt-1">
-        <button
-          onClick={() => { setForm(INITIAL); setSaved(false); }}
-          className="text-sm text-stone-400 hover:text-stone-600 font-medium transition-colors"
+      <div className="bg-white border border-stone-200 rounded-2xl shadow-sm overflow-hidden">
+        
+        <div className="p-8 border-b border-stone-100">
+          <h2 className="text-xs font-bold tracking-wider text-stone-400 uppercase mb-6">
+            Organisation
+          </h2>
+          
+          <div className="space-y-6">
+            <div>
+              <label className="flex items-center gap-2 text-xs font-bold tracking-wider text-stone-500 uppercase mb-2">
+                <Building2 size={14} /> NGO Organisation Name
+              </label>
+              <input
+                type="text"
+                name="ngoName"
+                value={profile.ngoName}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm text-stone-800 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all"
+              />
+              <p className="text-[11px] text-stone-400 mt-1.5">This name appears on all exported reports.</p>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 text-xs font-bold tracking-wider text-stone-500 uppercase mb-2">
+                <Mail size={14} /> Primary Contact Email
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={profile.email}
+                disabled
+                className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm text-stone-500 cursor-not-allowed"
+              />
+              <p className="text-[11px] text-stone-400 mt-1.5">
+                Used for system notifications. To change your login email, please contact support.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-8">
+          <h2 className="text-xs font-bold tracking-wider text-stone-400 uppercase mb-6">
+            Regional
+          </h2>
+          
+          <div>
+            <label className="flex items-center gap-2 text-xs font-bold tracking-wider text-stone-500 uppercase mb-2">
+              <MapPin size={14} /> Default Operating Region
+            </label>
+            <select
+              name="region"
+              value={profile.region}
+              onChange={handleChange}
+              className="w-full px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm text-stone-800 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all appearance-none"
+            >
+              <option value="Mumbai Metropolitan Region">Mumbai Metropolitan Region</option>
+              <option value="Pune District">Pune District</option>
+              <option value="Thane District">Thane District</option>
+              <option value="Palghar District">Palghar District</option>
+              <option value="Other / National">Other / National</option>
+            </select>
+            <p className="text-[11px] text-stone-400 mt-1.5">Filters dashboard data to your primary field area.</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between pt-4">
+        {/* Reset button now actually works by pulling from our original memory! */}
+        <button 
+          onClick={() => setProfile(originalProfile)}
+          disabled={!hasChanges}
+          className="text-sm font-semibold text-stone-400 hover:text-stone-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Reset to defaults
         </button>
-
+        
+        {/* Dynamic Button Styling based on hasChanges */}
         <button
           onClick={handleSave}
-          disabled={!isDirty || saving}
-          className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-sm transition-all duration-150
-            ${!isDirty
-              ? "bg-stone-200 text-stone-400 cursor-not-allowed shadow-none"
-              : saving
-              ? "bg-teal-400 cursor-wait"
-              : "bg-teal-600 hover:bg-teal-700 active:scale-95"
+          disabled={saving || !hasChanges}
+          className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all duration-150
+            ${
+              !hasChanges 
+                ? "bg-stone-200 text-stone-400 cursor-not-allowed shadow-none" 
+                : saving 
+                ? "bg-emerald-400 text-white cursor-wait" 
+                : "bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95"
             }`}
         >
           {saving ? (
@@ -177,16 +227,17 @@ export default function SettingsPage() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
               </svg>
-              Saving…
+              Saving...
             </>
           ) : (
             <>
-              <Save size={15} />
+              <Save size={16} />
               Save Preferences
             </>
           )}
         </button>
       </div>
+
     </div>
   );
 }

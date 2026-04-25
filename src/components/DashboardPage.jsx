@@ -1,314 +1,209 @@
-import {
-  ClipboardList,
-  AlertTriangle,
-  Users,
-  TrendingUp,
-  ArrowUpRight,
-  MapPin,
-  Tag,
+import { useState, useEffect } from "react";
+import { db, auth } from "../firebase"; // Make sure this path is correct!
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { 
+  ClipboardList, 
+  AlertTriangle, 
+  Users, 
+  ArrowUpRight, 
+  MapPin, 
+  Tag 
 } from "lucide-react";
 
-// ── Mock Data ──────────────────────────────────────────────────────────────────
-
-const SUMMARY_CARDS = [
-  {
-    label: "Pending Surveys",
-    value: "34",
-    change: "+4 this week",
-    trend: "up",
-    icon: ClipboardList,
-    accent: "teal",
-  },
-  {
-    label: "Critical Needs",
-    value: "12",
-    change: "3 escalated today",
-    trend: "up",
-    icon: AlertTriangle,
-    accent: "rose",
-  },
-  {
-    label: "Active Volunteers",
-    value: "128",
-    change: "+17 this month",
-    trend: "up",
-    icon: Users,
-    accent: "amber",
-  },
-];
-
-const COMMUNITY_NEEDS = [
-  {
-    id: "CN-001",
-    category: "Food Security",
-    location: "Dharavi, Mumbai",
-    urgency: "High",
-    status: "In Progress",
-  },
-  {
-    id: "CN-002",
-    category: "Medical Aid",
-    location: "Govandi, Mumbai",
-    urgency: "Critical",
-    status: "Pending",
-  },
-  {
-    id: "CN-003",
-    category: "Education",
-    location: "Kurla West, Mumbai",
-    urgency: "Medium",
-    status: "Resolved",
-  },
-  {
-    id: "CN-004",
-    category: "Sanitation",
-    location: "Mankhurd, Mumbai",
-    urgency: "High",
-    status: "In Progress",
-  },
-  {
-    id: "CN-005",
-    category: "Shelter",
-    location: "Chembur, Mumbai",
-    urgency: "Low",
-    status: "Pending",
-  },
-];
-
-// ── Badge config ───────────────────────────────────────────────────────────────
-
-const URGENCY_STYLES = {
-  Critical: "bg-rose-50 text-rose-700 ring-1 ring-rose-200",
-  High: "bg-orange-50 text-orange-700 ring-1 ring-orange-200",
-  Medium: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
-  Low: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
-};
-
-const STATUS_STYLES = {
-  Pending: "bg-stone-100 text-stone-500",
-  "In Progress": "bg-sky-50 text-sky-700",
-  Resolved: "bg-teal-50 text-teal-700",
-};
-
-const ACCENT_STYLES = {
-  teal: {
-    bg: "bg-teal-50",
-    icon: "bg-teal-600 text-white",
-    text: "text-teal-600",
-    bar: "bg-teal-400",
-  },
-  rose: {
-    bg: "bg-rose-50",
-    icon: "bg-rose-500 text-white",
-    text: "text-rose-500",
-    bar: "bg-rose-400",
-  },
-  amber: {
-    bg: "bg-amber-50",
-    icon: "bg-amber-500 text-white",
-    text: "text-amber-500",
-    bar: "bg-amber-400",
-  },
-};
-
-// ── Sub-components ─────────────────────────────────────────────────────────────
-
-function SummaryCard({ label, value, change, icon: Icon, accent }) {
-  const a = ACCENT_STYLES[accent];
-  return (
-    <div className="relative bg-white rounded-2xl border border-stone-200 p-6 overflow-hidden group hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-      {/* Decorative corner blob */}
-      <div
-        className={`absolute -top-6 -right-6 w-24 h-24 rounded-full opacity-30 ${a.bg}`}
-      />
-
-      <div className="flex items-start justify-between relative">
-        <div
-          className={`flex items-center justify-center w-10 h-10 rounded-xl ${a.icon} shadow-sm`}
-        >
-          <Icon size={18} strokeWidth={2} />
-        </div>
-        <span
-          className={`flex items-center gap-1 text-xs font-semibold ${a.text}`}
-        >
-          <TrendingUp size={12} />
-          <span>{change}</span>
-        </span>
-      </div>
-
-      <div className="mt-5 relative">
-        <p className="text-3xl font-bold text-stone-800 tracking-tight">
-          {value}
-        </p>
-        <p className="mt-1 text-xs font-semibold text-stone-400 uppercase tracking-widest">
-          {label}
-        </p>
-      </div>
-
-      {/* Bottom accent bar */}
-      <div className={`absolute bottom-0 left-0 h-0.5 w-full ${a.bar} opacity-50`} />
-    </div>
-  );
-}
-
-function UrgencyBadge({ urgency }) {
-  return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-        URGENCY_STYLES[urgency] ?? "bg-stone-100 text-stone-500"
-      }`}
-    >
-      {urgency === "Critical" && (
-        <span className="mr-1 w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse inline-block" />
-      )}
-      {urgency}
-    </span>
-  );
-}
-
-function StatusBadge({ status }) {
-  return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-        STATUS_STYLES[status] ?? "bg-stone-100 text-stone-500"
-      }`}
-    >
-      {status}
-    </span>
-  );
-}
-
-// ── Main Page ──────────────────────────────────────────────────────────────────
-
 export default function DashboardPage() {
+  const [surveys, setSurveys] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // --- Real-time Firebase Listener ---
+  // --- Real-time Firebase Listener ---
+  useEffect(() => {
+    // Safety check: Make sure someone is actually logged in
+    if (!auth.currentUser) return;
+
+    // 1. Point to your surveys, but FILTER by the current user's email
+    const q = query(
+      collection(db, "surveys"), 
+      where("uploaderEmail", "==", auth.currentUser.email)
+    );
+
+    // 2. Set up the listener
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const surveyData = [];
+      snapshot.forEach((doc) => {
+        surveyData.push({ id: doc.id, ...doc.data() });
+      });
+
+      // 3. Sort them newest to oldest (We do this in JavaScript to avoid Firebase indexing errors)
+      surveyData.sort((a, b) => {
+        const timeA = a.uploadedAt?.toMillis() || 0;
+        const timeB = b.uploadedAt?.toMillis() || 0;
+        return timeB - timeA;
+      });
+
+      setSurveys(surveyData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching surveys:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // --- Helper for Status Colors ---
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Resolved": return "bg-emerald-50 text-emerald-700";
+      case "In Progress": return "bg-sky-50 text-sky-700";
+      case "Pending AI Processing": return "bg-purple-50 text-purple-700";
+      default: return "bg-stone-100 text-stone-600";
+    }
+  };
+
+  // --- Helper for Urgency Colors ---
+  const getUrgencyColor = (urgency) => {
+    switch (urgency) {
+      case "Critical": return "text-rose-700 border-rose-200 bg-rose-50";
+      case "High": return "text-orange-700 border-orange-200 bg-orange-50";
+      case "Medium": return "text-yellow-700 border-yellow-200 bg-yellow-50";
+      case "Pending": return "text-purple-700 border-purple-200 bg-purple-50";
+      default: return "text-stone-600 border-stone-200 bg-stone-50";
+    }
+  };
+
   return (
-    <div className="space-y-8">
-      {/* ── Page heading ── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-stone-800 tracking-tight">
-            Active Needs Dashboard
-          </h2>
-          <p className="text-sm text-stone-400 mt-0.5">
-            Real-time overview of field surveys and community needs.
-          </p>
-        </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold transition-colors shadow-sm">
-          View Full Report
-          <ArrowUpRight size={15} />
-        </button>
-      </div>
-
-      {/* ── Summary Cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        {SUMMARY_CARDS.map((card) => (
-          <SummaryCard key={card.label} {...card} />
-        ))}
-      </div>
-
-      {/* ── Community Needs Table ── */}
-      <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
-        {/* Table header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
-          <div>
-            <h3 className="text-sm font-bold text-stone-800">
-              Community Needs
-            </h3>
-            <p className="text-xs text-stone-400 mt-0.5">
-              {COMMUNITY_NEEDS.length} active entries
-            </p>
+    <div className="max-w-6xl mx-auto space-y-8">
+      
+      {/* --- STATS CARDS --- */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white border-t-4 border-teal-400 rounded-xl p-6 shadow-sm border-x border-b border-stone-200">
+          <div className="flex items-center justify-between">
+            <div className="p-3 bg-teal-50 rounded-lg text-teal-600">
+              <ClipboardList size={24} />
+            </div>
+            <span className="flex items-center gap-1 text-xs font-semibold text-teal-600">
+              <ArrowUpRight size={14} /> +4 this week
+            </span>
           </div>
-          <button className="text-xs font-semibold text-teal-600 hover:text-teal-700 transition-colors">
+          <div className="mt-4">
+            {/* Make this number dynamic based on the actual database count! */}
+            <h3 className="text-3xl font-bold text-stone-800">{surveys.length}</h3>
+            <p className="text-xs font-bold tracking-wider text-stone-400 uppercase mt-1">Total Surveys</p>
+          </div>
+        </div>
+
+        <div className="bg-white border-t-4 border-rose-400 rounded-xl p-6 shadow-sm border-x border-b border-stone-200">
+          <div className="flex items-center justify-between">
+            <div className="p-3 bg-rose-50 rounded-lg text-rose-600">
+              <AlertTriangle size={24} />
+            </div>
+            <span className="flex items-center gap-1 text-xs font-semibold text-rose-600">
+              <ArrowUpRight size={14} /> 3 escalated today
+            </span>
+          </div>
+          <div className="mt-4">
+            {/* Count how many are marked Critical */}
+            <h3 className="text-3xl font-bold text-stone-800">
+              {surveys.filter(s => s.urgency === "Critical").length}
+            </h3>
+            <p className="text-xs font-bold tracking-wider text-stone-400 uppercase mt-1">Critical Needs</p>
+          </div>
+        </div>
+
+        <div className="bg-white border-t-4 border-amber-400 rounded-xl p-6 shadow-sm border-x border-b border-stone-200">
+          <div className="flex items-center justify-between">
+            <div className="p-3 bg-amber-50 rounded-lg text-amber-600">
+              <Users size={24} />
+            </div>
+            <span className="flex items-center gap-1 text-xs font-semibold text-amber-600">
+              <ArrowUpRight size={14} /> +17 this month
+            </span>
+          </div>
+          <div className="mt-4">
+            <h3 className="text-3xl font-bold text-stone-800">128</h3>
+            <p className="text-xs font-bold tracking-wider text-stone-400 uppercase mt-1">Active Volunteers</p>
+          </div>
+        </div>
+      </div>
+
+      {/* --- LIVE DATA TABLE --- */}
+      <div className="bg-white border border-stone-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="px-6 py-5 border-b border-stone-200 flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold text-stone-800">Community Needs</h3>
+            <p className="text-sm text-stone-500">{surveys.length} active entries</p>
+          </div>
+          <button className="text-sm font-semibold text-teal-600 hover:text-teal-700 transition-colors">
             Export CSV →
           </button>
         </div>
 
-        {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-stone-50 border-b border-stone-100">
-                {["ID", "Category", "Location", "Urgency", "Status"].map(
-                  (col) => (
-                    <th
-                      key={col}
-                      className="px-6 py-3 text-left text-[11px] font-semibold text-stone-400 uppercase tracking-widest"
-                    >
-                      {col}
-                    </th>
-                  )
-                )}
+              <tr className="bg-stone-50/50 border-b border-stone-200">
+                <th className="px-6 py-4 text-xs font-bold tracking-wider text-stone-400 uppercase">Image</th>
+                <th className="px-6 py-4 text-xs font-bold tracking-wider text-stone-400 uppercase">Category</th>
+                <th className="px-6 py-4 text-xs font-bold tracking-wider text-stone-400 uppercase">Location</th>
+                <th className="px-6 py-4 text-xs font-bold tracking-wider text-stone-400 uppercase">Urgency</th>
+                <th className="px-6 py-4 text-xs font-bold tracking-wider text-stone-400 uppercase">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-50">
-              {COMMUNITY_NEEDS.map((row, i) => (
-                <tr
-                  key={row.id}
-                  className="hover:bg-stone-50/70 transition-colors group cursor-pointer"
-                  style={{ animationDelay: `${i * 60}ms` }}
-                >
-                  {/* ID */}
-                  <td className="px-6 py-4">
-                    <span className="font-mono text-xs font-semibold text-stone-400 bg-stone-100 px-2 py-0.5 rounded-md">
-                      {row.id}
-                    </span>
-                  </td>
-
-                  {/* Category */}
-                  <td className="px-6 py-4">
-                    <span className="flex items-center gap-2 font-medium text-stone-700">
-                      <Tag
-                        size={13}
-                        className="text-stone-300 shrink-0"
-                        strokeWidth={2}
-                      />
-                      {row.category}
-                    </span>
-                  </td>
-
-                  {/* Location */}
-                  <td className="px-6 py-4">
-                    <span className="flex items-center gap-1.5 text-stone-500">
-                      <MapPin
-                        size={13}
-                        className="text-stone-300 shrink-0"
-                        strokeWidth={2}
-                      />
-                      {row.location}
-                    </span>
-                  </td>
-
-                  {/* Urgency */}
-                  <td className="px-6 py-4">
-                    <UrgencyBadge urgency={row.urgency} />
-                  </td>
-
-                  {/* Status */}
-                  <td className="px-6 py-4">
-                    <StatusBadge status={row.status} />
+            <tbody className="divide-y divide-stone-100">
+              
+              {loading ? (
+                <tr>
+                  <td colSpan="5" className="px-6 py-8 text-center text-sm text-stone-500">
+                    Loading live data...
                   </td>
                 </tr>
-              ))}
+              ) : surveys.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="px-6 py-8 text-center text-sm text-stone-500">
+                    No surveys uploaded yet. Head to the Upload page to get started!
+                  </td>
+                </tr>
+              ) : (
+                surveys.map((survey) => (
+                  <tr key={survey.id} className="hover:bg-stone-50/50 transition-colors">
+                    {/* The Image Thumbnail! */}
+                    <td className="px-6 py-4">
+                      <a href={survey.imageUrl} target="_blank" rel="noreferrer">
+                        <img 
+                          src={survey.imageUrl} 
+                          alt="Survey" 
+                          className="w-12 h-12 rounded-lg object-cover border border-stone-200 hover:opacity-80 transition-opacity"
+                        />
+                      </a>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <Tag size={14} className="text-stone-400" />
+                        <span className="text-sm font-semibold text-stone-700">{survey.category}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-sm text-stone-500">
+                        <MapPin size={14} />
+                        {survey.location}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold border ${getUrgencyColor(survey.urgency)}`}>
+                        {survey.urgency === "Critical" && <span className="w-1.5 h-1.5 rounded-full bg-rose-600 mr-1.5 animate-pulse"></span>}
+                        {survey.urgency}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusColor(survey.status)}`}>
+                        {survey.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
-        </div>
-
-        {/* Table footer */}
-        <div className="flex items-center justify-between px-6 py-3 border-t border-stone-100 bg-stone-50/50">
-          <p className="text-xs text-stone-400">
-            Showing 1–{COMMUNITY_NEEDS.length} of {COMMUNITY_NEEDS.length}{" "}
-            results
-          </p>
-          <div className="flex gap-1">
-            {["←", "→"].map((arrow) => (
-              <button
-                key={arrow}
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-stone-400 hover:bg-stone-200 hover:text-stone-600 transition-colors text-sm"
-              >
-                {arrow}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
     </div>
