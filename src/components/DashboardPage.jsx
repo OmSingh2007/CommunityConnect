@@ -146,6 +146,7 @@ export default function DashboardPage() {
                 <th className="px-6 py-4 text-xs font-bold tracking-wider text-stone-400 uppercase">Category</th>
                 <th className="px-6 py-4 text-xs font-bold tracking-wider text-stone-400 uppercase">Location</th>
                 <th className="px-6 py-4 text-xs font-bold tracking-wider text-stone-400 uppercase">Urgency</th>
+                <th className="px-6 py-4 text-left text-[10px] font-bold text-stone-400 uppercase tracking-wider">Summary</th>
                 <th className="px-6 py-4 text-xs font-bold tracking-wider text-stone-400 uppercase">Status</th>
               </tr>
             </thead>
@@ -194,6 +195,16 @@ export default function DashboardPage() {
                         {survey.urgency}
                       </span>
                     </td>
+                    <td className="px-6 py-4 max-w-xs">
+                      <p 
+                        className="text-sm text-stone-600 truncate cursor-help" 
+                        title={survey.summary}
+                      >
+                        {survey.summary || "No summary available"}
+                      </p>
+                    </td>
+
+                    {/* ... existing status column ... */}
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusColor(survey.status)}`}>
                         {survey.status}

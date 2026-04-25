@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { db, auth } from "../firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { model, fetchImageAsGenerativePart } from "../gemini";
 import {
   CloudUpload,
   FileImage,
@@ -37,7 +38,7 @@ function FileChip({ file, onRemove }) {
 }
 
 export default function UploadSurveyPage() {
-  const [files, setFiles] = useState([]); 
+  const [files, setFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -61,12 +62,12 @@ export default function UploadSurveyPage() {
       f.type.startsWith("image/")
     );
     if (dropped.length === 0) return;
-    
+
     const mapped = dropped.map((f) => ({
       name: f.name,
       size: (f.size / (1024 * 1024)).toFixed(1) + " MB",
       type: f.type,
-      originalFile: f 
+      originalFile: f
     }));
     setFiles((prev) => [...prev, ...mapped]);
     setSubmitted(false);
@@ -80,7 +81,7 @@ export default function UploadSurveyPage() {
       name: f.name,
       size: (f.size / (1024 * 1024)).toFixed(1) + " MB",
       type: f.type,
-      originalFile: f 
+      originalFile: f
     }));
     setFiles((prev) => [...prev, ...mapped]);
     setSubmitted(false);
@@ -90,52 +91,86 @@ export default function UploadSurveyPage() {
   const removeFile = (index) =>
     setFiles((prev) => prev.filter((_, i) => i !== index));
 
+
   const handleUpload = async () => {
     if (files.length === 0) return;
     setIsSubmitting(true);
     setError("");
     setSubmitted(false);
-    
+
     try {
       for (const item of files) {
-        
+
+        // 1. Upload to Cloudinary
         const formData = new FormData();
-        formData.append("file", item.originalFile); 
-        
-        formData.append("upload_preset", "Community_Connect___surveys"); 
+        formData.append("file", item.originalFile);
+        formData.append("upload_preset", "Community_Connect___surveys");
 
         const cloudinaryResponse = await fetch(
           `https://api.cloudinary.com/v1_1/do6hn4q3u/image/upload`,
-          {
-            method: "POST",
-            body: formData,
-          }
+          { method: "POST", body: formData }
         );
 
-        if (!cloudinaryResponse.ok) {
-          throw new Error(`Failed to upload ${item.name}`);
-        }
+        if (!cloudinaryResponse.ok) throw new Error(`Failed to upload ${item.name}`);
 
         const cloudinaryData = await cloudinaryResponse.json();
-        const secureImageUrl = cloudinaryData.secure_url; 
+        const secureImageUrl = cloudinaryData.secure_url;
+
+
+        let aiData = {
+          category: "Uncategorized",
+          location: "Unknown Location",
+          urgency: "Pending",
+          summary: "AI could not read the handwriting clearly."
+        };
+
+        try {
+
+          const imagePart = await fetchImageAsGenerativePart(secureImageUrl);
+
+          // This is the prompt we provide to gemini
+          const promptText = `
+            You are an expert data extraction assistant for an NGO. 
+            Analyze this handwritten field survey image. 
+            Extract the data and return ONLY a raw JSON object. Do not use markdown formatting like \`\`\`json.
+            
+            Strictly use these exact JSON keys:
+            - "category": Choose the best fit from: "Healthcare", "Education", "Water & Sanitation", "Infrastructure", "Other".
+            - "location": Extract the village, district, city, or address mentioned. If none, write "Not Specified".
+            - "urgency": Based on the tone and need, classify as "Critical", "High", "Medium", or "Low".
+            - "summary": Write a clear, 1-sentence summary of what the person is asking for or reporting.
+          `;
+
+
+          const result = await model.generateContent([promptText, imagePart]);
+          const responseText = result.response.text();
+
+
+          const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+          aiData = JSON.parse(cleanJson);
+
+        } catch (aiError) {
+          console.error("Gemini failed to process image:", aiError);
+        }
 
         await addDoc(collection(db, "surveys"), {
           imageUrl: secureImageUrl,
           fileName: item.name,
           uploadedAt: serverTimestamp(),
-          status: "Pending AI Processing", 
-          category: "Uncategorized",
-          location: "Pending Extraction",
-          urgency: "Pending",
+          status: "In Progress",
+          category: aiData.category,
+          location: aiData.location,
+          urgency: aiData.urgency,
+          summary: aiData.summary,
           uploaderEmail: auth.currentUser?.email
         });
       }
 
       setSubmitted(true);
-      setFiles([]); 
+      setFiles([]);
     } catch (err) {
       console.error("Upload failed:", err);
-      setError("Failed to upload surveys. Please check your connection and try again.");
+      setError("Failed to upload surveys. Please check your connection.");
     } finally {
       setIsSubmitting(false);
     }
@@ -175,10 +210,9 @@ export default function UploadSurveyPage() {
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
         className={`relative flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed px-8 py-14 cursor-pointer select-none transition-all duration-200
-          ${
-            isDragging
-              ? "border-teal-400 bg-teal-50 scale-[1.01]"
-              : "border-stone-200 bg-stone-50 hover:border-teal-300 hover:bg-teal-50/40"
+          ${isDragging
+            ? "border-teal-400 bg-teal-50 scale-[1.01]"
+            : "border-stone-200 bg-stone-50 hover:border-teal-300 hover:bg-teal-50/40"
           }`}
       >
         <input
@@ -191,9 +225,8 @@ export default function UploadSurveyPage() {
         />
 
         <div
-          className={`flex items-center justify-center w-16 h-16 rounded-2xl transition-colors duration-200 ${
-            isDragging ? "bg-teal-100 text-teal-600" : "bg-white text-stone-300 border border-stone-200"
-          }`}
+          className={`flex items-center justify-center w-16 h-16 rounded-2xl transition-colors duration-200 ${isDragging ? "bg-teal-100 text-teal-600" : "bg-white text-stone-300 border border-stone-200"
+            }`}
         >
           <CloudUpload size={32} strokeWidth={1.5} />
         </div>
@@ -277,10 +310,9 @@ export default function UploadSurveyPage() {
           onClick={handleUpload}
           disabled={files.length === 0 || isSubmitting}
           className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-sm transition-all duration-150
-            ${
-              files.length === 0
-                ? "bg-stone-200 text-stone-400 cursor-not-allowed shadow-none"
-                : isSubmitting
+            ${files.length === 0
+              ? "bg-stone-200 text-stone-400 cursor-not-allowed shadow-none"
+              : isSubmitting
                 ? "bg-teal-400 cursor-wait"
                 : "bg-teal-600 hover:bg-teal-700 active:scale-95"
             }`}
