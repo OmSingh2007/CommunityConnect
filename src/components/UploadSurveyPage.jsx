@@ -15,20 +15,20 @@ import {
 
 function FileChip({ file, onRemove }) {
   return (
-    <div className="flex items-center gap-3 bg-teal-50 border border-teal-200 rounded-xl px-4 py-3 group">
-      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-teal-100 text-teal-600 shrink-0">
+    <div className="flex items-center gap-3 bg-teal-50 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-800 rounded-xl px-4 py-3 group">
+      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-teal-100 dark:bg-teal-800 text-teal-600 dark:text-teal-300 shrink-0">
         <FileImage size={18} strokeWidth={1.8} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-stone-700 truncate">
+        <p className="text-sm font-semibold text-stone-700 dark:text-stone-200 truncate">
           {file.name}
         </p>
-        <p className="text-xs text-stone-400 mt-0.5">{file.size}</p>
+        <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">{file.size}</p>
       </div>
-      <CheckCircle2 size={16} className="text-teal-500 shrink-0" />
+      <CheckCircle2 size={16} className="text-teal-500 dark:text-teal-400 shrink-0" />
       <button
         onClick={onRemove}
-        className="ml-1 p-1 rounded-full text-stone-300 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+        className="ml-1 p-1 rounded-full text-stone-300 dark:text-stone-500 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-colors"
         aria-label="Remove file"
       >
         <X size={14} />
@@ -179,24 +179,24 @@ export default function UploadSurveyPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-8">
       <div>
-        <h2 className="text-xl font-bold text-stone-800 tracking-tight">
+        <h2 className="text-xl font-bold text-stone-800 dark:text-stone-100 tracking-tight">
           Upload Survey
         </h2>
-        <p className="text-sm text-stone-400 mt-1">
+        <p className="text-sm text-stone-400 dark:text-stone-500 mt-1">
           Upload photos of handwritten paper surveys for AI extraction and processing.
         </p>
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 p-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl">
+        <div className="flex items-center gap-2 p-4 text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-xl">
           <AlertCircle size={18} />
           {error}
         </div>
       )}
 
-      <div className="flex items-start gap-3 bg-sky-50 border border-sky-200 rounded-xl px-4 py-3.5">
-        <Sparkles size={16} className="text-sky-500 mt-0.5 shrink-0" />
-        <p className="text-xs text-sky-700 leading-relaxed">
+      <div className="flex items-start gap-3 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800/30 rounded-xl px-4 py-3.5">
+        <Sparkles size={16} className="text-sky-500 dark:text-sky-400 mt-0.5 shrink-0" />
+        <p className="text-xs text-sky-700 dark:text-sky-300 leading-relaxed">
           <span className="font-semibold">AI-powered extraction.</span> Our
           model reads handwritten survey responses and populates the database
           automatically. Supported formats:{" "}
@@ -211,8 +211,8 @@ export default function UploadSurveyPage() {
         onClick={() => inputRef.current?.click()}
         className={`relative flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed px-8 py-14 cursor-pointer select-none transition-all duration-200
           ${isDragging
-            ? "border-teal-400 bg-teal-50 scale-[1.01]"
-            : "border-stone-200 bg-stone-50 hover:border-teal-300 hover:bg-teal-50/40"
+            ? "border-teal-400 bg-teal-50 dark:bg-teal-900/20 scale-[1.01]"
+            : "border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50 hover:border-teal-300 dark:hover:border-teal-500 hover:bg-teal-50/40 dark:hover:bg-teal-900/10"
           }`}
       >
         <input
@@ -225,21 +225,21 @@ export default function UploadSurveyPage() {
         />
 
         <div
-          className={`flex items-center justify-center w-16 h-16 rounded-2xl transition-colors duration-200 ${isDragging ? "bg-teal-100 text-teal-600" : "bg-white text-stone-300 border border-stone-200"
+          className={`flex items-center justify-center w-16 h-16 rounded-2xl transition-colors duration-200 ${isDragging ? "bg-teal-100 dark:bg-teal-800 text-teal-600 dark:text-teal-300" : "bg-white dark:bg-stone-800 text-stone-300 dark:text-stone-500 border border-stone-200 dark:border-stone-700"
             }`}
         >
           <CloudUpload size={32} strokeWidth={1.5} />
         </div>
 
         <div className="text-center space-y-1">
-          <p className="text-sm font-semibold text-stone-600">
+          <p className="text-sm font-semibold text-stone-600 dark:text-stone-300">
             {isDragging
               ? "Release to attach files"
               : "Drag & drop survey images here"}
           </p>
-          <p className="text-xs text-stone-400">
+          <p className="text-xs text-stone-400 dark:text-stone-500">
             or{" "}
-            <span className="text-teal-600 font-semibold underline underline-offset-2 decoration-dashed">
+            <span className="text-teal-600 dark:text-teal-400 font-semibold underline underline-offset-2 decoration-dashed">
               click to browse
             </span>{" "}
             from your device
@@ -250,7 +250,7 @@ export default function UploadSurveyPage() {
           {["JPG", "PNG", "WEBP"].map((ext) => (
             <span
               key={ext}
-              className="px-2.5 py-0.5 text-[10px] font-bold tracking-widest text-stone-400 bg-white border border-stone-200 rounded-full uppercase"
+              className="px-2.5 py-0.5 text-[10px] font-bold tracking-widest text-stone-400 dark:text-stone-500 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-full uppercase"
             >
               {ext}
             </span>
@@ -258,19 +258,19 @@ export default function UploadSurveyPage() {
         </div>
 
         {isDragging && (
-          <div className="absolute inset-0 rounded-2xl bg-teal-400/5 pointer-events-none" />
+          <div className="absolute inset-0 rounded-2xl bg-teal-400/5 dark:bg-teal-400/10 pointer-events-none" />
         )}
       </div>
 
       {files.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-stone-500 uppercase tracking-widest">
+            <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-widest">
               Attached Files ({files.length})
             </p>
             <button
               onClick={() => setFiles([])}
-              className="text-xs text-stone-400 hover:text-rose-500 transition-colors font-medium"
+              className="text-xs text-stone-400 dark:text-stone-500 hover:text-rose-500 dark:hover:text-rose-400 transition-colors font-medium"
             >
               Remove all
             </button>
@@ -284,23 +284,23 @@ export default function UploadSurveyPage() {
       )}
 
       {submitted && (
-        <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-5 py-4">
-          <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />
+        <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/30 rounded-xl px-5 py-4">
+          <CheckCircle2 size={18} className="text-emerald-500 dark:text-emerald-400 shrink-0" />
           <div>
-            <p className="text-sm font-semibold text-emerald-800">
+            <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
               Submitted for AI processing!
             </p>
-            <p className="text-xs text-emerald-600 mt-0.5">
+            <p className="text-xs text-emerald-600 dark:text-emerald-400/80 mt-0.5">
               Results will appear in your Dashboard within a few minutes.
             </p>
           </div>
         </div>
       )}
 
-      <div className="flex items-center justify-between pt-2 border-t border-stone-100">
+      <div className="flex items-center justify-between pt-2 border-t border-stone-100 dark:border-stone-800">
         <button
           onClick={() => inputRef.current?.click()}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-stone-200 text-sm font-semibold text-stone-600 hover:bg-stone-50 transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 text-sm font-semibold text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors"
         >
           <ImagePlus size={15} />
           Add More

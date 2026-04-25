@@ -60,27 +60,27 @@ export default function ProfilePage() {
     }
   };
 
-  if (loading) return <div className="p-8 text-stone-500">Loading profile...</div>;
+  if (loading) return <div className="p-8 text-stone-500 dark:text-stone-400">Loading profile...</div>;
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 pb-12">
       <div>
-        <h1 className="text-2xl font-bold text-stone-800 tracking-tight">My Profile</h1>
-        <p className="text-stone-500 text-sm mt-1">Manage your organisation's public details.</p>
+        <h1 className="text-2xl font-bold text-stone-800 dark:text-stone-100 tracking-tight">My Profile</h1>
+        <p className="text-stone-500 dark:text-stone-400 text-sm mt-1">Manage your organisation's public details.</p>
       </div>
 
       {message.text && (
         <div className={`flex items-center gap-2 p-4 text-sm border rounded-xl transition-all ${
-          message.type === "success" ? "text-emerald-700 bg-emerald-50 border-emerald-200" : "text-rose-700 bg-rose-50 border-rose-200"
+          message.type === "success" ? "text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/30" : "text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800/30"
         }`}>
           {message.type === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
           {message.text}
         </div>
       )}
 
-      <div className="bg-white border border-stone-200 rounded-2xl shadow-sm p-8 space-y-6">
+      <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl shadow-sm p-8 space-y-6 transition-colors">
         <div>
-          <label className="flex items-center gap-2 text-xs font-bold tracking-wider text-stone-500 uppercase mb-2">
+          <label className="flex items-center gap-2 text-xs font-bold tracking-wider text-stone-500 dark:text-stone-400 uppercase mb-2">
             <Building2 size={14} /> NGO Organisation Name
           </label>
           <input
@@ -88,19 +88,19 @@ export default function ProfilePage() {
             name="ngoName"
             value={profile.ngoName}
             onChange={handleChange}
-            className="w-full px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm text-stone-800 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all"
+            className="w-full px-4 py-2.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl text-sm text-stone-800 dark:text-stone-100 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all"
           />
         </div>
 
         <div>
-          <label className="flex items-center gap-2 text-xs font-bold tracking-wider text-stone-500 uppercase mb-2">
+          <label className="flex items-center gap-2 text-xs font-bold tracking-wider text-stone-500 dark:text-stone-400 uppercase mb-2">
             <Mail size={14} /> Primary Contact Email
           </label>
           <input
             type="email"
             value={profile.email}
             disabled
-            className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm text-stone-500 cursor-not-allowed"
+            className="w-full px-4 py-2.5 bg-stone-50 dark:bg-stone-900/50 border border-stone-200 dark:border-stone-700 rounded-xl text-sm text-stone-500 dark:text-stone-400 cursor-not-allowed"
           />
         </div>
       </div>
@@ -110,7 +110,7 @@ export default function ProfilePage() {
           onClick={handleSave}
           disabled={saving || !hasChanges}
           className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all duration-150
-            ${!hasChanges ? "bg-stone-200 text-stone-400 cursor-not-allowed shadow-none" : saving ? "bg-emerald-400 text-white cursor-wait" : "bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95"}`}
+            ${!hasChanges ? "bg-stone-200 dark:bg-stone-700 text-stone-400 dark:text-stone-500 cursor-not-allowed shadow-none" : saving ? "bg-emerald-400 cursor-wait text-white" : "bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95"}`}
         >
           {saving ? "Saving..." : <><Save size={16} /> Save Profile</>}
         </button>

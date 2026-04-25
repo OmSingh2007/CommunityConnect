@@ -3,6 +3,7 @@ import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
 import './App.css'
+import AnalyticsPage from "./components/AnalyticsPage";
 
 function App() {
   const [count, setCount] = useState(0)
@@ -28,7 +29,10 @@ function App() {
         >
           Count is {count}
         </button>
+
       </section>
+      {/* Analytics Page */}
+      <AnalyticsPage surveys={[]} />
 
       <div className="ticks"></div>
 

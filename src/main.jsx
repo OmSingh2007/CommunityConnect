@@ -4,6 +4,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import DashboardPage from "./components/DashboardPage";
 import UploadSurveyPage from "./components/UploadSurveyPage";
 import SettingsPage from "./components/SettingsPage";
+import VolunteerHub from "./components/VolunteerHub";
+import AnalyticsPage from "./components/AnalyticsPage";
 import ProfilePage from "./components/ProfilePage";
 import AuthPage from "./components/AuthPage";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -31,7 +33,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <Route index element={<DashboardPage />} />
           <Route path="upload" element={<UploadSurveyPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="volunteer-hub" element={<VolunteerHub />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="analytics" element={<AnalyticsPage surveys={[]} />} />
           {/* Catch-all: redirect unknown paths to dashboard */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

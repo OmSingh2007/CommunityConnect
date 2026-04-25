@@ -66,7 +66,7 @@ function InputField({ label, type = "text", placeholder, icon: Icon, value, onCh
           placeholder={placeholder}
           value={value}
           onChange={onChange}
-          className="w-full pl-10 pr-10 py-2.5 text-sm text-stone-700 bg-white border border-stone-200 rounded-xl placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-teal-300 focus:border-teal-400 hover:border-stone-300 transition-all duration-150"
+          className="w-full pl-10 pr-10 py-2.5 text-sm text-stone-700 dark:text-stone-200 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl placeholder:text-stone-300 dark:placeholder:text-stone-600 focus:outline-none focus:ring-2 focus:ring-teal-300 focus:border-teal-400 hover:border-stone-300 dark:hover:border-stone-600 transition-all duration-150"
         />
         {suffix && (
           <span className="absolute right-3.5 top-1/2 -translate-y-1/2">
@@ -176,7 +176,7 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-stone-50 font-sans">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-stone-50 dark:bg-stone-900 font-sans transition-colors duration-200">
       
       <div className="relative hidden lg:flex flex-col justify-between w-[44%] shrink-0 bg-teal-700 px-12 py-12 overflow-hidden">
         <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-teal-600 opacity-40" />
@@ -229,24 +229,24 @@ export default function AuthPage() {
         <div className="w-full max-w-sm space-y-8">
           
           <div className="flex lg:hidden items-center gap-2 justify-center">
-            <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-teal-600 text-white">
+            <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-teal-600 dark:bg-teal-700 text-white">
               <HeartHandshake size={20} strokeWidth={1.8} />
             </span>
-            <p className="text-base font-bold text-stone-800 tracking-tight">CommunityConnect</p>
+            <p className="text-base font-bold text-stone-800 dark:text-stone-100 tracking-tight">CommunityConnect</p>
           </div>
 
           <div className="space-y-1">
-            <h2 className="text-2xl font-bold text-stone-800 tracking-tight">
+            <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-100 tracking-tight">
               {isLogin ? "Welcome back" : "Create your account"}
             </h2>
-            <p className="text-sm text-stone-400">
+            <p className="text-sm text-stone-400 dark:text-stone-500">
               {isLogin
                 ? "Sign in to access your NGO dashboard."
                 : "Start managing your community impact today."}
             </p>
           </div>
 
-          <div className="flex bg-stone-100 rounded-xl p-1">
+          <div className="flex bg-stone-100 dark:bg-stone-800 rounded-xl p-1">
             {["Sign In", "Create Account"].map((label, i) => (
               <button
                 key={label}
@@ -258,8 +258,8 @@ export default function AuthPage() {
                 }}
                 className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
                   isLogin === (i === 0)
-                    ? "bg-white text-teal-700 shadow-sm"
-                    : "text-stone-400 hover:text-stone-600"
+                    ? "bg-white dark:bg-stone-700 text-teal-700 dark:text-teal-400 shadow-sm"
+                    : "text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300"
                 }`}
               >
                 {label}
@@ -272,7 +272,7 @@ export default function AuthPage() {
             className="space-y-4"
           >
             {error && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
+              <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-lg">
                 {error}
               </div>
             )}
@@ -300,7 +300,7 @@ export default function AuthPage() {
                     <select
                       value={form.region}
                       onChange={handleChange("region")}
-                      className="w-full pl-10 pr-10 py-2.5 text-sm text-stone-700 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-300 focus:border-teal-400 hover:border-stone-300 transition-all duration-150 appearance-none"
+                      className="w-full pl-10 pr-10 py-2.5 text-sm text-stone-700 dark:text-stone-200 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-300 focus:border-teal-400 hover:border-stone-300 dark:hover:border-stone-600 transition-all duration-150 appearance-none"
                     >
                       <option value="Mumbai Metropolitan Region">Mumbai Metropolitan Region</option>
                       <option value="Pune District">Pune District</option>
@@ -342,7 +342,7 @@ export default function AuthPage() {
 
             {isLogin && (
               <div className="text-right">
-                <button type="button" className="text-xs font-semibold text-teal-600 hover:text-teal-700 transition-colors">
+                <button type="button" className="text-xs font-semibold text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 transition-colors">
                   Forgot password?
                 </button>
               </div>
@@ -371,37 +371,37 @@ export default function AuthPage() {
             </button>
 
             <div className="flex items-center gap-3 py-1">
-              <div className="flex-1 h-px bg-stone-200" />
-              <span className="text-xs text-stone-400 font-medium">or</span>
-              <div className="flex-1 h-px bg-stone-200" />
+              <div className="flex-1 h-px bg-stone-200 dark:bg-stone-700" />
+              <span className="text-xs text-stone-400 dark:text-stone-500 font-medium">or</span>
+              <div className="flex-1 h-px bg-stone-200 dark:bg-stone-700" />
             </div>
 
             <button 
               type="button"
               onClick={handleGoogle}
-              className="w-full flex items-center justify-center gap-2.5 py-2.5 rounded-xl border border-stone-200 bg-white text-sm font-semibold text-stone-600 hover:bg-stone-50 hover:border-stone-300 active:scale-95 transition-all duration-150 shadow-sm"
+              className="w-full flex items-center justify-center gap-2.5 py-2.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-sm font-semibold text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 hover:border-stone-300 dark:hover:border-stone-600 active:scale-95 transition-all duration-150 shadow-sm"
             >
               <GoogleIcon />
               Continue with Google
             </button>
           </form>
 
-          <p className="text-center text-xs text-stone-400">
+          <p className="text-center text-xs text-stone-400 dark:text-stone-500">
             {isLogin ? "Don't have an account? " : "Already have an account? "}
             <button
               type="button"
               onClick={() => { setIsLogin((v) => !v); setForm({ email: "", password: "", ngoName: "", region: "Mumbai Metropolitan Region" }); setError(""); }}
-              className="text-teal-600 font-semibold hover:text-teal-700 transition-colors"
+              className="text-teal-600 dark:text-teal-400 font-semibold hover:text-teal-700 dark:hover:text-teal-300 transition-colors"
             >
               {isLogin ? "Create one" : "Sign in"}
             </button>
           </p>
 
-          <p className="text-center text-[11px] text-stone-300 leading-relaxed">
+          <p className="text-center text-[11px] text-stone-300 dark:text-stone-600 leading-relaxed">
             By continuing, you agree to CommunityConnect's{" "}
-            <span className="underline cursor-pointer hover:text-stone-500 transition-colors">Terms</span>{" "}
+            <span className="underline cursor-pointer hover:text-stone-500 dark:hover:text-stone-400 transition-colors">Terms</span>{" "}
             and{" "}
-            <span className="underline cursor-pointer hover:text-stone-500 transition-colors">Privacy Policy</span>.
+            <span className="underline cursor-pointer hover:text-stone-500 dark:hover:text-stone-400 transition-colors">Privacy Policy</span>.
           </p>
         </div>
       </div>

@@ -10,7 +10,9 @@ import {
   Settings,
   LayoutDashboard,
   UploadCloud,
-  HeartHandshake
+  HeartHandshake,
+  BarChart3,
+  Users
 } from "lucide-react";
 
 export default function DashboardLayout() {
@@ -37,19 +39,19 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className="flex h-screen bg-stone-50 font-sans">
+    <div className="flex h-screen bg-stone-50 dark:bg-stone-900 font-sans transition-colors duration-200">
       
       {/* --- SIDEBAR --- */}
-      <div className="w-64 bg-white border-r border-stone-200 flex flex-col">
+      <div className="w-64 bg-white dark:bg-stone-800 border-r border-stone-200 dark:border-stone-700 flex flex-col transition-colors duration-200">
         {/* Sidebar Logo */}
-        <div className="h-20 flex items-center px-6 border-b border-stone-100">
+        <div className="h-20 flex items-center px-6 border-b border-stone-100 dark:border-stone-700">
           <div className="flex items-center gap-2">
             <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-teal-600 text-white">
               <HeartHandshake size={18} />
             </span>
             <div>
-              <p className="text-sm font-bold text-stone-800 leading-tight">CommunityConnect</p>
-              <p className="text-[10px] font-semibold tracking-widest text-stone-400 uppercase">NGO Portal</p>
+              <p className="text-sm font-bold text-stone-800 dark:text-stone-100 leading-tight">CommunityConnect</p>
+              <p className="text-[10px] font-semibold tracking-widest text-stone-400 dark:text-stone-500 uppercase">NGO Portal</p>
             </div>
           </div>
         </div>
@@ -58,29 +60,39 @@ export default function DashboardLayout() {
         <nav className="flex-1 px-4 py-6 space-y-1">
           <p className="px-2 text-xs font-bold tracking-wider text-stone-400 uppercase mb-4">Main Menu</p>
           
-          <Link to="/" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/' ? 'bg-teal-50 text-teal-700' : 'text-stone-600 hover:bg-stone-50'}`}>
+          <Link to="/" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/' ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-700/50'}`}>
             <LayoutDashboard size={18} />
             Dashboard
           </Link>
           
-          <Link to="/upload" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/upload' ? 'bg-teal-50 text-teal-700' : 'text-stone-600 hover:bg-stone-50'}`}>
+          <Link to="/upload" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/upload' ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-700/50'}`}>
             <UploadCloud size={18} />
             Upload Survey
           </Link>
+
+          <Link to="/analytics" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/analytics' ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-700/50'}`}>
+            <BarChart3 size={18} />
+            Analytics
+          </Link>
           
-          <Link to="/settings" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/settings' ? 'bg-teal-50 text-teal-700' : 'text-stone-600 hover:bg-stone-50'}`}>
+          <Link to="/settings" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/settings' ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-700/50'}`}>
             <Settings size={18} />
             Settings
+          </Link>
+
+          <Link to="/volunteer-hub" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/volunteer-hub' ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-700/50'}`}>
+            <Users size={18} />
+            Volunteer Hub
           </Link>
         </nav>
       </div>
 
       <div className="flex-1 flex flex-col overflow-hidden">
         
-        <header className="flex items-center justify-between px-8 py-4 bg-white border-b border-stone-200">
+        <header className="flex items-center justify-between px-8 py-4 bg-white dark:bg-stone-800 border-b border-stone-200 dark:border-stone-700 transition-colors duration-200">
           <div>
-            <h2 className="text-xl font-bold text-stone-800">Welcome back 👋</h2>
-            <p className="text-sm text-stone-500">
+            <h2 className="text-xl font-bold text-stone-800 dark:text-stone-100">Welcome back 👋</h2>
+            <p className="text-sm text-stone-500 dark:text-stone-400">
               {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
           </div>
@@ -96,32 +108,32 @@ export default function DashboardLayout() {
             <div className="relative">
               <button 
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex items-center gap-3 hover:bg-stone-50 p-2 rounded-lg transition-colors"
+                className="flex items-center gap-3 hover:bg-stone-50 dark:hover:bg-stone-700/50 p-2 rounded-lg transition-colors"
               >
                 <div className="flex items-center justify-center w-10 h-10 rounded-full bg-teal-600 text-white font-bold text-sm">
                   {userInitials}
                 </div>
                 <div className="hidden md:block text-left">
-                  <p className="text-sm font-bold text-stone-800 truncate max-w-[150px]">
+                  <p className="text-sm font-bold text-stone-800 dark:text-stone-100 truncate max-w-[150px]">
                     {currentUser?.email || "NGO User"}
                   </p>
-                  <p className="text-xs text-stone-500">Program Manager</p>
+                  <p className="text-xs text-stone-500 dark:text-stone-400">Program Manager</p>
                 </div>
-                <ChevronDown size={16} className="text-stone-400" />
+                <ChevronDown size={16} className="text-stone-400 dark:text-stone-500" />
               </button>
 
               {isProfileOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-stone-200 rounded-xl shadow-lg py-2 z-50">
-                  <Link to="/profile" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors">
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl shadow-lg py-2 z-50 transition-colors">
+                  <Link to="/profile" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700/50 transition-colors">
                     <User size={16} />
                     My Profile
                   </Link>
-                  <Link to="/settings" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors">
+                  <Link to="/settings" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700/50 transition-colors">
                     <Settings size={16} />
                     Account Settings
                   </Link>
-                  <div className="h-px bg-stone-100 my-2"></div>
-                  <button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                  <div className="h-px bg-stone-100 dark:bg-stone-700 my-2"></div>
+                  <button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                     <LogOut size={16} />
                     Log Out
                   </button>
