@@ -23,13 +23,28 @@ export default function VolunteerHub() {
     return () => unsubscribe();
   }, []);
 
-  const [volunteers, setVolunteers] = useState([
-    { id: 1, name: "Rahul Sharma", role: "Medical Specialist", status: "Available", phone: "+91 98765 43210" },
-    { id: 2, name: "Priya Patel", role: "Logistics Coordinator", status: "Deployed", phone: "+91 87654 32109" },
-    { id: 3, name: "Amit Kumar", role: "General Volunteer", status: "Available", phone: "+91 76543 21098" },
-    { id: 4, name: "Neha Singh", role: "Water & Sanitation", status: "Available", phone: "+91 65432 10987" }
-  ]);
+  // 1. Start with an empty array
+  const [volunteers, setVolunteers] = useState([]);
 
+  // 2. Add the real-time Firebase listener
+  useEffect(() => {
+    // This connects to your 'volunteers' collection
+    const volunteersRef = collection(db, "volunteers");
+    
+    // onSnapshot listens for ANY changes in real-time
+    const unsubscribe = onSnapshot(volunteersRef, (snapshot) => {
+      const liveData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      // Update your React table with the live data!
+      setVolunteers(liveData);
+    });
+
+    // Cleanup the listener when you leave the page
+    return () => unsubscribe();
+  }, []);
   const actionItems = surveys.filter(s => s.status !== "Deployed" && s.status !== "Resolved");
   const availableVolunteers = volunteers.filter(v => v.status === "Available");
 
