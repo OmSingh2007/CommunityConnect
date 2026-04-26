@@ -7,6 +7,7 @@ import {
   Save,
   AlertCircle,
   ClipboardList,
+  ShieldCheck,
   AlertTriangle,
   Users
 } from "lucide-react";
@@ -197,12 +198,29 @@ export default function DashboardPage() {
                     <td className="px-6 py-4 max-w-xs">
                       <p className="text-stone-600 dark:text-stone-400 truncate cursor-help" title={survey.summary}> {survey.summary || "No summary available"} </p>
                     </td>
+
                     <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/30 px-2.5 py-1 rounded-full border border-teal-200 dark:border-teal-800">
-                        {survey.status === "In Progress" && <AlertCircle size={12} />}
-                        {survey.status}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className={`inline-flex w-fit items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${survey.status === "Deployed"
+                            ? "bg-blue-50 text-blue-700 border-blue-200"
+                            : survey.status === "Reviewed"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : "bg-teal-50 text-teal-700 border-teal-200"
+                          }`}>
+                          {survey.status === "In Progress" && <AlertCircle size={12} />}
+                          {survey.status === "Deployed" && <ShieldCheck size={12} />}
+                          {survey.status}
+                        </span>
+
+                        {/* NEW: If it's deployed, show the team names! */}
+                        {survey.status === "Deployed" && survey.assignedTeam && (
+                          <span className="text-[10px] text-stone-500 font-medium leading-tight">
+                            Team: {survey.assignedTeam.join(", ")}
+                          </span>
+                        )}
+                      </div>
                     </td>
+                    
                     <td className="px-6 py-4 text-right">
                       <button onClick={() => setEditingSurvey(survey)} className="p-2 text-stone-400 dark:text-stone-500 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-lg transition-all">
                         <Edit2 size={16} />
