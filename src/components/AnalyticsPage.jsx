@@ -1,78 +1,132 @@
-import React from "react";
+import { useState, useEffect } from 'react';
+import { PieChart, BarChart3 } from 'lucide-react';
+import { db, auth } from "../firebase";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 
-export default function AnalyticsPage({ surveys }) {
-  const categoryCounts = surveys.reduce((acc, survey) => {
-    const cat = survey.category || "Uncategorized";
-    acc[cat] = (acc[cat] || 0) + 1;
-    return acc;
-  }, {});
+export default function AnalyticsPage() {
+  // --- 1. State to hold the data ---
+  const [surveys, setSurveys] = useState([]);
 
-  const urgencyCounts = surveys.reduce((acc, survey) => {
-    const urg = survey.urgency || "Unknown";
-    acc[urg] = (acc[urg] || 0) + 1;
-    return acc;
-  }, {});
+  // --- 2. Fetch data from Firebase in Real-time ---
+  useEffect(() => {
+    if (!auth.currentUser) return;
 
-  // Compute total number of surveys for percentage calculations
-  const totalSurveys = surveys.length || 1; // avoid division by zero
+    const q = query(
+      collection(db, "surveys"), 
+      where("uploaderEmail", "==", auth.currentUser.email)
+    );
 
-  // Helper to calculate percentage for a given count
-  const percent = (count) => Math.round((count / totalSurveys) * 100);
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const surveyData = [];
+      snapshot.forEach((doc) => {
+        surveyData.push({ id: doc.id, ...doc.data() });
+      });
+      setSurveys(surveyData);
+    });
 
-  // ---------- UI Rendering ----------
+    return () => unsubscribe();
+  }, []);
+
+  // --- 3. Data Calculations ---
+  const total = surveys.length || 1; // Prevent division by zero if empty
+  
+  // Calculate Urgency
+  const critical = surveys.filter(s => s.urgency === 'Critical').length;
+  const high = surveys.filter(s => s.urgency === 'High').length;
+  const medium = surveys.filter(s => s.urgency === 'Medium').length;
+  const low = surveys.filter(s => s.urgency === 'Low').length;
+
+  // Calculate Categories
+  const categories = {
+    "Healthcare": surveys.filter(s => s.category === 'Healthcare').length,
+    "Education": surveys.filter(s => s.category === 'Education').length,
+    "Water & Sanitation": surveys.filter(s => s.category === 'Water & Sanitation').length,
+    "Infrastructure": surveys.filter(s => s.category === 'Infrastructure').length,
+    "Other": surveys.filter(s => s.category === 'Other').length,
+  };
+
+  // --- 4. Render the UI ---
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-stone-900 p-6 transition-colors duration-200">
-      {/* Main card container */}
-      <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl shadow-md p-8 transition-colors duration-200">
-        {/* Header */}
-        <h1 className="text-3xl font-bold text-teal-700 dark:text-teal-400 mb-4">Donor Transparency Report</h1>
-        {/* Category Breakdown */}
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold text-stone-800 dark:text-stone-100 mb-2">Needs by Category</h2>
-          <div className="space-y-4">
-            {Object.entries(categoryCounts).map(([category, count]) => (
-              <div key={category} className="flex items-center">
-                <span className="w-32 text-sm font-medium text-stone-600 dark:text-stone-400" title={category}>{category}</span>
-                <div className="flex-1 mx-4 bg-stone-100 dark:bg-stone-700 h-4 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-teal-600 dark:bg-teal-500 rounded-full transition-all"
-                    style={{ width: `${percent(count)}%` }}
-                  ></div>
+    <div className="space-y-8 pb-12">
+      <div>
+        <h1 className="text-2xl font-bold text-stone-800 tracking-tight">Donor Transparency Report</h1>
+        <p className="text-stone-500 text-sm mt-1">Real-time breakdown of community needs and urgency.</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* --- URGENCY LEVELS CARD --- */}
+        <div className="bg-white p-6 border border-stone-200 rounded-2xl shadow-sm">
+          <div className="flex items-center gap-2 mb-6 border-b border-stone-100 pb-4">
+            <div className="p-2 bg-rose-50 text-rose-600 rounded-lg"><BarChart3 size={20} /></div>
+            <h2 className="text-lg font-bold text-stone-800">Urgency Distribution</h2>
+          </div>
+          
+          <div className="space-y-5">
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <span className="font-bold text-stone-700">Critical</span>
+                <span className="text-stone-500">{critical} surveys ({Math.round((critical/total)*100)}%)</span>
+              </div>
+              <div className="w-full bg-stone-100 rounded-full h-2.5">
+                <div className="bg-rose-500 h-2.5 rounded-full" style={{ width: `${(critical/total)*100}%` }}></div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <span className="font-bold text-stone-700">High</span>
+                <span className="text-stone-500">{high} surveys ({Math.round((high/total)*100)}%)</span>
+              </div>
+              <div className="w-full bg-stone-100 rounded-full h-2.5">
+                <div className="bg-orange-400 h-2.5 rounded-full" style={{ width: `${(high/total)*100}%` }}></div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <span className="font-bold text-stone-700">Medium</span>
+                <span className="text-stone-500">{medium} surveys ({Math.round((medium/total)*100)}%)</span>
+              </div>
+              <div className="w-full bg-stone-100 rounded-full h-2.5">
+                <div className="bg-amber-400 h-2.5 rounded-full" style={{ width: `${(medium/total)*100}%` }}></div>
+              </div>
+            </div>
+            
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <span className="font-bold text-stone-700">Low</span>
+                <span className="text-stone-500">{low} surveys ({Math.round((low/total)*100)}%)</span>
+              </div>
+              <div className="w-full bg-stone-100 rounded-full h-2.5">
+                <div className="bg-stone-300 h-2.5 rounded-full" style={{ width: `${(low/total)*100}%` }}></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* --- CATEGORY BREAKDOWN CARD --- */}
+        <div className="bg-white p-6 border border-stone-200 rounded-2xl shadow-sm">
+          <div className="flex items-center gap-2 mb-6 border-b border-stone-100 pb-4">
+            <div className="p-2 bg-teal-50 text-teal-600 rounded-lg"><PieChart size={20} /></div>
+            <h2 className="text-lg font-bold text-stone-800">Needs by Category</h2>
+          </div>
+          
+          <div className="space-y-5">
+            {Object.entries(categories).map(([category, count]) => (
+              <div key={category}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="font-bold text-stone-700">{category}</span>
+                  <span className="text-stone-500">{count} ({surveys.length > 0 ? Math.round((count/total)*100) : 0}%)</span>
                 </div>
-                <span className="w-12 text-sm font-medium text-stone-800 dark:text-stone-200">{count}</span>
+                <div className="w-full bg-stone-100 rounded-full h-2">
+                  <div className="bg-teal-500 h-2 rounded-full" style={{ width: `${(count/total)*100}%` }}></div>
+                </div>
               </div>
             ))}
           </div>
-        </section>
-        {/* Urgency Breakdown */}
-        <section>
-          <h2 className="text-xl font-semibold text-stone-800 dark:text-stone-100 mb-2">Urgency Levels</h2>
-          <div className="space-y-4">
-            {Object.entries(urgencyCounts).map(([urgency, count]) => {
-              // Choose a color based on urgency
-              const colorMap = {
-                Critical: "bg-rose-600 dark:bg-rose-500",
-                High: "bg-orange-500 dark:bg-orange-400",
-                Medium: "bg-amber-400 dark:bg-amber-500",
-                Low: "bg-green-500 dark:bg-green-400",
-                Unknown: "bg-stone-400 dark:bg-stone-500",
-              };
-              const barColor = colorMap[urgency] || "bg-stone-400 dark:bg-stone-500";
-              return (
-                <div key={urgency} className="flex items-center">
-                  <span className="w-32 text-sm font-medium text-stone-600 dark:text-stone-400" title={urgency}>{urgency}</span>
-                  <div className="flex-1 mx-4 bg-stone-100 dark:bg-stone-700 h-4 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${barColor}`}
-                      style={{ width: `${percent(count)}%` }}
-                    ></div>
-                  </div>
-                  <span className="w-12 text-sm font-medium text-stone-800 dark:text-stone-200">{count}</span>
-                </div>
-              );
-            })}
-          </div>
-        </section>
+        </div>
+
       </div>
     </div>
   );

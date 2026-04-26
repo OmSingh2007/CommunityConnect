@@ -35,7 +35,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <Route path="settings" element={<SettingsPage />} />
           <Route path="volunteer-hub" element={<VolunteerHub />} />
           <Route path="profile" element={<ProfilePage />} />
-          <Route path="analytics" element={<AnalyticsPage surveys={[]} />} />
+          <Route path="analytics" element={<AnalyticsPage/>} />
           {/* Catch-all: redirect unknown paths to dashboard */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
