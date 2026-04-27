@@ -19,14 +19,19 @@ export default function DashboardPage() {
   // Modal State
   const [editingSurvey, setEditingSurvey] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-
+  const [activeVolunteersCount, setActiveVolunteersCount] = useState(0);
   // --- Real-time Firebase Listener ---
   useEffect(() => {
+    // 1. We still check if the user is logged in
     if (!auth.currentUser) return;
 
+    // 2. Define your specific NGO ID
+    const currentNgoId = "mumbai_relief_02";
+
+    // 3. Query Firebase for ALL surveys belonging to this NGO
     const q = query(
       collection(db, "surveys"),
-      where("uploaderEmail", "==", auth.currentUser.email)
+      where("ngoId", "==", currentNgoId)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -35,9 +40,10 @@ export default function DashboardPage() {
         surveyData.push({ id: doc.id, ...doc.data() });
       });
 
+      // Sort newest to oldest
       surveyData.sort((a, b) => {
-        const timeA = a.uploadedAt?.toMillis() || 0;
-        const timeB = b.uploadedAt?.toMillis() || 0;
+        const timeA = a.uploadedAt?.toMillis() || a.createdAt?.toMillis() || 0; // Added fallback for createdAt from dispatch form
+        const timeB = b.uploadedAt?.toMillis() || b.createdAt?.toMillis() || 0;
         return timeB - timeA;
       });
 
@@ -47,7 +53,31 @@ export default function DashboardPage() {
 
     return () => unsubscribe();
   }, []);
+  // --- Real-time Firebase Listener for VOLUNTEERS ---
+  useEffect(() => {
+    // Make sure this matches Rishabh's app perfectly!
+    const currentNgoId = "mumbai_relief_02"; 
 
+    const q = query(
+      collection(db, "volunteers"),
+      where("ngoId", "==", currentNgoId)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      let availableCount = 0;
+      
+      // Loop through all volunteers for this NGO and count the available ones
+      snapshot.forEach((doc) => {
+        if (doc.data().status === "Available") {
+          availableCount++;
+        }
+      });
+      
+      setActiveVolunteersCount(availableCount);
+    });
+
+    return () => unsubscribe();
+  }, []);
   // --- Dynamic Dashboard Math ---
   // We calculate these live based on whatever is in the database!
   const totalSurveysCount = surveys.length;
@@ -87,8 +117,8 @@ export default function DashboardPage() {
       const date = survey.uploadedAt
         ? survey.uploadedAt.toDate().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
         : "Unknown Date";
-      const safeLocation = `"${(survey.location || "").replace(/"/g, '\"') }"`;
-      const safeSummary = `"${(survey.summary || "").replace(/"/g, '\"') }"`;
+      const safeLocation = `"${(survey.location || "").replace(/"/g, '""') }"`;
+      const safeSummary = `"${(survey.summary || "").replace(/"/g, '""') }"`;
       return [date, survey.category, safeLocation, survey.urgency, survey.status, safeSummary].join(",");
     });
     const csvContent = [headers.join(","), ...csvRows].join("\n");
@@ -132,14 +162,15 @@ export default function DashboardPage() {
           <p className="text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider mt-1">Critical Needs</p>
         </div>
 
-        {/* Active Volunteers (static) */}
+        {/* Active Volunteers (live) */}
         <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl shadow-md p-6 transition-all hover:-translate-y-0.5 hover:shadow-lg">
           <div className="flex justify-between items-start mb-4">
             <div className="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center">
               <Users size={20} />
             </div>
           </div>
-          <h3 className="text-3xl font-bold text-stone-800 dark:text-stone-100">128</h3>
+          {/* ---> THE NUMBER IS NOW LIVE <--- */}
+          <h3 className="text-3xl font-bold text-stone-800 dark:text-stone-100">{activeVolunteersCount}</h3>
           <p className="text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider mt-1">Active Volunteers</p>
         </div>
       </div>

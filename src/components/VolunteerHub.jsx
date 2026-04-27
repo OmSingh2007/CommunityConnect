@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Users, MapPin, AlertCircle, CheckCircle2, UserPlus, X, ShieldCheck } from 'lucide-react';
-import { db, auth } from "../firebase";
+import { Users, MapPin, AlertCircle, CheckCircle2, X, ShieldCheck } from 'lucide-react';
+import { db } from "../firebase";
+import DispatchForm from './DispatchForm';
 import { collection, query, where, onSnapshot, doc, updateDoc } from "firebase/firestore";
 
 export default function VolunteerHub() {
@@ -12,9 +13,11 @@ export default function VolunteerHub() {
   const [isDeploying, setIsDeploying] = useState(false);
 
   // Fetch real surveys
+  // Fetch real surveys (FILTERED BY NGO)
   useEffect(() => {
-    if (!auth.currentUser) return;
-    const q = query(collection(db, "surveys"), where("uploaderEmail", "==", auth.currentUser.email));
+    const currentNgoId = "mumbai_relief_02"; 
+    const q = query(collection(db, "surveys"), where("ngoId", "==", currentNgoId));
+    
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const surveyData = [];
       snapshot.forEach((doc) => surveyData.push({ id: doc.id, ...doc.data() }));
@@ -27,24 +30,26 @@ export default function VolunteerHub() {
   const [volunteers, setVolunteers] = useState([]);
 
   // 2. Add the real-time Firebase listener
+  // Fetch real-time volunteers (FILTERED BY NGO)
   useEffect(() => {
-    // This connects to your 'volunteers' collection
+    // 1. Define the ID of the currently logged-in NGO
+    const currentNgoId = "mumbai_relief_02"; 
+
+    // 2. Create a specific query instead of fetching the whole collection
     const volunteersRef = collection(db, "volunteers");
-    
-    // onSnapshot listens for ANY changes in real-time
-    const unsubscribe = onSnapshot(volunteersRef, (snapshot) => {
+    const q = query(volunteersRef, where("ngoId", "==", currentNgoId));
+
+    // 3. Listen ONLY to the results of that query
+    const unsubscribe = onSnapshot(q, (snapshot) => {
       const liveData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      
-      // Update your React table with the live data!
       setVolunteers(liveData);
     });
-
-    // Cleanup the listener when you leave the page
+    
     return () => unsubscribe();
-  }, []);
+  }, []); // <-- Make sure query and where are imported at the top!
   const actionItems = surveys.filter(s => s.status !== "Deployed" && s.status !== "Resolved");
   const availableVolunteers = volunteers.filter(v => v.status === "Available");
 
@@ -91,15 +96,25 @@ export default function VolunteerHub() {
     <div className="space-y-8 pb-12 transition-colors duration-200">
       
       <div className="flex justify-between items-end">
-        <div>
-          <h1 className="text-2xl font-bold text-stone-800 dark:text-white tracking-tight">Dispatch Center</h1>
-          <p className="text-stone-500 dark:text-stone-400 text-sm mt-1">Assign active volunteers to verified community needs.</p>
-        </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 font-bold text-sm rounded-xl border border-teal-200 dark:border-teal-800/50 hover:bg-teal-100 dark:hover:bg-teal-900/50 transition-colors">
-          <UserPlus size={16} /> Add Volunteer
-        </button>
+        {/* ... header stuff ... */}
       </div>
 
+      {/* --- TOP COMMAND ROW --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Side: The Dispatch Form */}
+        <div className="lg:col-span-1">
+          <DispatchForm /> 
+        </div>
+
+        {/* Right Side: A placeholder for your future map or analytics */}
+        <div className="lg:col-span-2 bg-stone-50 dark:bg-stone-900/50 rounded-2xl border-2 border-dashed border-stone-200 dark:border-stone-800 flex items-center justify-center h-full min-h-[250px] transition-colors">
+          <p className="text-stone-400 dark:text-stone-500 font-medium tracking-wide text-sm">
+            Live Deployment Map / Analytics Space
+          </p>
+        </div>
+      </div>
+
+      {/* --- BOTTOM ROW: ACTION ITEMS & VOLUNTEERS --- */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
         {/* --- LEFT COLUMN: ACTION ITEMS --- */}
@@ -116,19 +131,30 @@ export default function VolunteerHub() {
               actionItems.map(item => (
                 <div key={item.id} className="p-4 border border-stone-200 dark:border-stone-700 rounded-xl hover:border-teal-300 dark:hover:border-teal-500 hover:shadow-md transition-all group bg-white dark:bg-stone-800/50">
                   <div className="flex justify-between items-start mb-2">
-                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${
-                      item.urgency === 'Critical' 
-                        ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400' 
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${item.urgency === 'Critical'
+                        ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400'
                         : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
-                    }`}>
-                      {item.urgency} Priority
+                      }`}>
+                      {item.urgency || "Standard"} Priority
                     </span>
                     <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">{item.category}</span>
                   </div>
-                  <h3 className="font-bold text-stone-800 dark:text-white text-sm mb-1">{item.location}</h3>
+
+                  {/* THIS IS NEW: Render the uploaded image if it exists! */}
+                  {item.imageUrl && (
+                    <div className="my-3">
+                      <img
+                        src={item.imageUrl}
+                        alt="Emergency Evidence"
+                        className="w-full h-32 object-cover rounded-lg border border-stone-200 dark:border-stone-700 shadow-sm"
+                      />
+                    </div>
+                  )}
+
+                  <h3 className="font-bold text-stone-800 dark:text-white text-sm mb-1">{item.location || "Location pending"}</h3>
                   <p className="text-xs text-stone-500 dark:text-stone-400 line-clamp-2 mb-3">{item.summary}</p>
-                  
-                  <button 
+
+                  <button
                     onClick={() => { setAssigningSurvey(item); setSelectedTeam([]); }}
                     className="w-full py-2 bg-stone-100 dark:bg-stone-700/50 text-stone-600 dark:text-stone-300 font-bold text-xs rounded-lg hover:bg-teal-600 dark:hover:bg-teal-600 hover:text-white transition-colors"
                   >

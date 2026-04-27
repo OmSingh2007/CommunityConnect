@@ -162,6 +162,7 @@ export default function UploadSurveyPage() {
           location: aiData.location,
           urgency: aiData.urgency,
           summary: aiData.summary,
+          ngoId:"mumbai_relief_02",
           uploaderEmail: auth.currentUser?.email
         });
       }
