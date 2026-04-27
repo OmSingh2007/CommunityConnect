@@ -16,7 +16,14 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    // Initialize directly from localStorage or document class
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("theme") === "dark" || 
+             document.documentElement.classList.contains("dark");
+    }
+    return false;
+  });
 
   // 1. We need TWO states now. One for editing, one for memory.
   const [profile, setProfile] = useState({
@@ -62,11 +69,6 @@ export default function SettingsPage() {
     };
 
     fetchUserData();
-
-    // Initialize dark mode state
-    if (document.documentElement.classList.contains("dark")) {
-      setIsDarkMode(true);
-    }
   }, []);
 
   const toggleDarkMode = () => {
