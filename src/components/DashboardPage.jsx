@@ -10,7 +10,8 @@ import {
   ShieldCheck,
   AlertTriangle,
   Users,
-  Maximize2
+  Maximize2,
+  CheckCircle2
 } from "lucide-react";
 import VolunteerMap from "./VolunteerMap";
 
@@ -281,12 +282,15 @@ export default function DashboardPage() {
                     <td className="px-5 py-3.5">
                       <div className="flex flex-col gap-1">
                         <span className={`inline-flex w-fit items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                          survey.status === "Completed" ? "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30" :
+                          survey.status === "In Progress" ? "bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/30" :
                           survey.status === "Deployed" ? "bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-500/30" :
-                          survey.status === "Reviewed" ? "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30" :
-                          "bg-sky-50 dark:bg-teal-500/15 text-sky-600 dark:text-teal-400 border-sky-200 dark:border-teal-500/30"
+                          survey.status === "Reviewed" ? "bg-purple-50 dark:bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-500/30" :
+                          "bg-sky-50 dark:bg-teal-500/15 text-sky-600 dark:text-teal-400 border-sky-200 dark:border-teal-500/30" // Default/Pending
                         }`}>
                           {survey.status === "In Progress" && <AlertCircle size={11} />}
                           {survey.status === "Deployed" && <ShieldCheck size={11} />}
+                          {survey.status === "Completed" && <CheckCircle2 size={11} />}
                           {survey.status}
                         </span>
                         {survey.status === "Deployed" && survey.assignedTeam && (
