@@ -47,7 +47,7 @@ export default function VolunteerHub() {
     
     return () => unsubscribe();
   }, []); // <-- Make sure query and where are imported at the top!
-  const actionItems = surveys.filter(s => s.status !== "Deployed" && s.status !== "Resolved");
+  const actionItems = surveys.filter(s => s.status !== "Deployed" && s.status !== "Resolved" && s.status !== "Completed");
   const availableVolunteers = volunteers.filter(v => v.status === "Available");
 
   const handleToggleVolunteer = (vol) => {

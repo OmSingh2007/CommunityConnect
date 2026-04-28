@@ -92,7 +92,7 @@ export default function UploadSurveyPage() {
     setFiles((prev) => prev.filter((_, i) => i !== index));
 
 
-  const handleUpload = async () => {
+const handleUpload = async () => {
     if (files.length === 0) return;
     setIsSubmitting(true);
     setError("");
@@ -116,16 +116,15 @@ export default function UploadSurveyPage() {
         const cloudinaryData = await cloudinaryResponse.json();
         const secureImageUrl = cloudinaryData.secure_url;
 
-
+        // Default fallback data in case AI fails
         let aiData = {
           category: "Uncategorized",
           location: "Unknown Location",
           urgency: "Pending",
-          summary: "AI could not read the handwriting clearly."
+          summary: "AI could not read the handwriting clearly or servers were busy."
         };
 
         try {
-
           const imagePart = await fetchImageAsGenerativePart(secureImageUrl);
 
           // This is the prompt we provide to gemini
@@ -141,23 +140,30 @@ export default function UploadSurveyPage() {
             - "summary": Write a clear, 1-sentence summary of what the person is asking for or reporting.
           `;
 
-
           const result = await model.generateContent([promptText, imagePart]);
           const responseText = result.response.text();
-
 
           const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
           aiData = JSON.parse(cleanJson);
 
         } catch (aiError) {
           console.error("Gemini failed to process image:", aiError);
+          
+          // GRACEFUL FAIL: Catch the 503 error for the hackathon demo
+          const errorMessage = aiError.message || "";
+          if (errorMessage.includes("503") || errorMessage.includes("high demand")) {
+            alert("The AI servers are currently experiencing heavy traffic. The survey image was saved, but please categorize it manually in the dashboard.");
+          } else {
+            alert("An error occurred while the AI was analyzing the image. It will be saved as 'Uncategorized'.");
+          }
         }
 
+        // Save to Firestore (works perfectly whether AI succeeds or fails!)
         await addDoc(collection(db, "surveys"), {
           imageUrl: secureImageUrl,
           fileName: item.name,
           uploadedAt: serverTimestamp(),
-          status: "In Progress",
+          status: "Pending", // Changed to "Pending" to match your dashboard Action Items logic
           category: aiData.category,
           location: aiData.location,
           urgency: aiData.urgency,
@@ -169,7 +175,7 @@ export default function UploadSurveyPage() {
         // Create a notification for the dashboard
         await addDoc(collection(db, "notifications"), {
           title: "New Survey Uploaded",
-          message: `AI extracted a ${aiData.urgency || 'Pending'} urgency survey for ${aiData.category || 'Uncategorized'} at ${aiData.location || 'Unknown Location'}.`,
+          message: `A new ${aiData.urgency || 'Pending'} urgency survey was uploaded for ${aiData.category || 'Uncategorized'} at ${aiData.location || 'Unknown Location'}.`,
           ngoId: "mumbai_relief_02",
           isRead: false,
           timestamp: serverTimestamp()
