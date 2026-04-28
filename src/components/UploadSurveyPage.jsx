@@ -15,8 +15,8 @@ import {
 
 function FileChip({ file, onRemove }) {
   return (
-    <div className="flex items-center gap-3 bg-teal-50 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-800 rounded-xl px-4 py-3 group">
-      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-teal-100 dark:bg-teal-800 text-teal-600 dark:text-teal-300 shrink-0">
+    <div className="flex items-center gap-3 bg-sky-50 dark:bg-teal-900/30 border border-sky-200 dark:border-teal-800 rounded-xl px-4 py-3 group">
+      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-sky-100 dark:bg-teal-800 text-sky-600 dark:text-teal-300 shrink-0">
         <FileImage size={18} strokeWidth={1.8} />
       </div>
       <div className="flex-1 min-w-0">
@@ -212,8 +212,8 @@ export default function UploadSurveyPage() {
         onClick={() => inputRef.current?.click()}
         className={`relative flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed px-8 py-14 cursor-pointer select-none transition-all duration-200
           ${isDragging
-            ? "border-teal-400 bg-teal-50 dark:bg-teal-900/20 scale-[1.01]"
-            : "border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50 hover:border-teal-300 dark:hover:border-teal-500 hover:bg-teal-50/40 dark:hover:bg-teal-900/10"
+            ? "border-sky-400 dark:border-teal-400 bg-sky-50 dark:bg-teal-900/20 scale-[1.01]"
+            : "border-sky-200 dark:border-stone-700 bg-white dark:bg-stone-800/50 hover:border-sky-300 dark:hover:border-teal-500 hover:bg-sky-50/40 dark:hover:bg-teal-900/10"
           }`}
       >
         <input
@@ -226,7 +226,7 @@ export default function UploadSurveyPage() {
         />
 
         <div
-          className={`flex items-center justify-center w-16 h-16 rounded-2xl transition-colors duration-200 ${isDragging ? "bg-teal-100 dark:bg-teal-800 text-teal-600 dark:text-teal-300" : "bg-white dark:bg-stone-800 text-stone-300 dark:text-stone-500 border border-stone-200 dark:border-stone-700"
+          className={`flex items-center justify-center w-16 h-16 rounded-2xl transition-colors duration-200 ${isDragging ? "bg-sky-100 dark:bg-teal-800 text-sky-600 dark:text-teal-300" : "bg-sky-50 dark:bg-stone-800 text-sky-400 dark:text-stone-500 border border-sky-100 dark:border-stone-700"
             }`}
         >
           <CloudUpload size={32} strokeWidth={1.5} />
@@ -240,7 +240,7 @@ export default function UploadSurveyPage() {
           </p>
           <p className="text-xs text-stone-400 dark:text-stone-500">
             or{" "}
-            <span className="text-teal-600 dark:text-teal-400 font-semibold underline underline-offset-2 decoration-dashed">
+            <span className="text-sky-600 dark:text-teal-400 font-semibold underline underline-offset-2 decoration-dashed">
               click to browse
             </span>{" "}
             from your device
@@ -312,10 +312,10 @@ export default function UploadSurveyPage() {
           disabled={files.length === 0 || isSubmitting}
           className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-sm transition-all duration-150
             ${files.length === 0
-              ? "bg-stone-200 text-stone-400 cursor-not-allowed shadow-none"
+              ? "bg-slate-200 dark:bg-stone-200 text-slate-400 dark:text-stone-400 cursor-not-allowed shadow-none"
               : isSubmitting
-                ? "bg-teal-400 cursor-wait"
-                : "bg-teal-600 hover:bg-teal-700 active:scale-95"
+                ? "bg-sky-400 dark:bg-teal-400 cursor-wait"
+                : "bg-sky-600 hover:bg-sky-700 dark:bg-teal-600 dark:hover:bg-teal-700 active:scale-95 shadow-[0_0_20px_rgba(2,132,199,0.25)] dark:shadow-[0_0_20px_rgba(45,212,191,0.25)]"
             }`}
         >
           {isSubmitting ? (

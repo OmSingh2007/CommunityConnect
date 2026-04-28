@@ -13,6 +13,10 @@ import "./index.css"; // your Tailwind base styles
 
 import DashboardLayout from "./components/DashboardLayout";
 
+// ── Theme initialisation (runs before React mounts to avoid flash) ──
+const savedTheme = localStorage.getItem("theme") ?? "dark";
+document.documentElement.classList.toggle("dark", savedTheme === "dark");
+
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>

@@ -1,34 +1,50 @@
 import { useState } from "react";
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
-import { auth } from "../firebase"; // Make sure this path points to your firebase.js
+import { auth } from "../firebase";
 import { signOut } from "firebase/auth";
-import { 
-  Bell, 
-  ChevronDown, 
-  LogOut, 
-  User, 
+import {
+  Bell,
+  ChevronDown,
+  LogOut,
+  User,
   Settings,
   LayoutDashboard,
   UploadCloud,
   HeartHandshake,
   BarChart3,
-  Users
+  Users,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  
+
+  // ── Theme: read localStorage, default = dark ──────────────────────
+  const [isDarkMode, setIsDarkMode] = useState(
+    () => (localStorage.getItem("theme") ?? "dark") === "dark"
+  );
+
+  // Toggles the .dark class on <html> and persists the choice
+  const toggleTheme = () => {
+    const next = !isDarkMode;
+    setIsDarkMode(next);
+    document.documentElement.classList.toggle("dark", next);
+    localStorage.setItem("theme", next ? "dark" : "light");
+  };
+
+  // ── Firebase user helpers ──────────────────────────────────────────
   // 1. Get the current user from Firebase
   const currentUser = auth.currentUser;
 
-  // 2. Generate their initials (e.g., "om@email.com" becomes "OM")
-  const userInitials = currentUser?.email 
-    ? currentUser.email.substring(0, 2).toUpperCase() 
+  // 2. Generate their initials (e.g. "om@email.com" → "OM")
+  const userInitials = currentUser?.email
+    ? currentUser.email.substring(0, 2).toUpperCase()
     : "AU";
 
-  // 3. The logout function
+  // 3. Logout function
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -38,116 +54,166 @@ export default function DashboardLayout() {
     }
   };
 
+  // ── Shared nav-link class builder ─────────────────────────────────
+  const navLink = (path) =>
+    `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 border ${
+      location.pathname === path
+        ? "bg-sky-100 dark:bg-teal-500/20 text-sky-700 dark:text-teal-400 border-sky-300 dark:border-teal-500/30"
+        : "text-slate-500 dark:text-stone-400 border-transparent hover:bg-sky-50 dark:hover:bg-stone-700/40 hover:text-sky-700 dark:hover:text-stone-200"
+    }`;
+
   return (
-    <div className="flex h-screen bg-stone-50 dark:bg-stone-900 font-sans transition-colors duration-200">
-      
-      {/* --- SIDEBAR --- */}
-      <div className="w-64 bg-white dark:bg-stone-800 border-r border-stone-200 dark:border-stone-700 flex flex-col transition-colors duration-200">
-        {/* Sidebar Logo */}
-        <div className="h-20 flex items-center px-6 border-b border-stone-100 dark:border-stone-700">
-          <div className="flex items-center gap-2">
-            <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-teal-600 text-white">
+    <div className="flex h-screen bg-sky-50 dark:bg-stone-950 font-sans">
+
+      {/* ── SIDEBAR ─────────────────────────────────────────────── */}
+      <div className="w-64 bg-white dark:bg-stone-900/80 backdrop-blur-xl border-r border-sky-200 dark:border-stone-700/50 flex flex-col shadow-sm dark:shadow-none">
+
+        {/* Logo */}
+        <div className="h-20 flex items-center px-6 border-b border-sky-200 dark:border-stone-700/50">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-sky-100 dark:bg-teal-500/20 text-sky-600 dark:text-teal-400 border border-sky-300 dark:border-teal-500/30">
               <HeartHandshake size={18} />
             </span>
             <div>
-              <p className="text-sm font-bold text-stone-800 dark:text-stone-100 leading-tight">CommunityConnect</p>
-              <p className="text-[10px] font-semibold tracking-widest text-stone-400 dark:text-stone-500 uppercase">NGO Portal</p>
+              <p className="text-sm font-bold text-slate-800 dark:text-stone-100 leading-tight">CommunityConnect</p>
+              <p className="text-[10px] font-semibold tracking-widest text-slate-400 dark:text-stone-500 uppercase">NGO Portal</p>
             </div>
           </div>
         </div>
 
-        {/* Sidebar Navigation */}
+        {/* Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-1">
-          <p className="px-2 text-xs font-bold tracking-wider text-stone-400 uppercase mb-4">Main Menu</p>
-          
-          <Link to="/" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/' ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-700/50'}`}>
-            <LayoutDashboard size={18} />
-            Dashboard
-          </Link>
-          
-          <Link to="/upload" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/upload' ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-700/50'}`}>
-            <UploadCloud size={18} />
-            Upload Survey
+          <p className="px-3 text-[10px] font-bold tracking-widest text-slate-400 dark:text-stone-600 uppercase mb-3">General</p>
+
+          <Link to="/" className={navLink("/")}>
+            <LayoutDashboard size={17} /> Dashboard
           </Link>
 
-          <Link to="/analytics" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/analytics' ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-700/50'}`}>
-            <BarChart3 size={18} />
-            Analytics
-          </Link>
-          
-          <Link to="/settings" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/settings' ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-700/50'}`}>
-            <Settings size={18} />
-            Settings
+          <Link to="/upload" className={navLink("/upload")}>
+            <UploadCloud size={17} /> Upload Survey
           </Link>
 
-          <Link to="/volunteer-hub" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/volunteer-hub' ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400' : 'text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-700/50'}`}>
-            <Users size={18} />
-            Volunteer Hub
+          <Link to="/analytics" className={navLink("/analytics")}>
+            <BarChart3 size={17} /> Analytics
+          </Link>
+
+          <Link to="/volunteer-hub" className={navLink("/volunteer-hub")}>
+            <Users size={17} /> Volunteer Hub
+          </Link>
+
+          <div className="pt-5 pb-1">
+            <p className="px-3 text-[10px] font-bold tracking-widest text-slate-400 dark:text-stone-600 uppercase mb-3">Settings</p>
+          </div>
+
+          <Link to="/settings" className={navLink("/settings")}>
+            <Settings size={17} /> Settings
           </Link>
         </nav>
+
+        {/* Bottom user strip — click to log out */}
+        <div className="p-4 border-t border-sky-200 dark:border-stone-700/50">
+          <div
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-sky-50 dark:hover:bg-stone-700/30 transition-all cursor-pointer group"
+          >
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-sky-100 dark:bg-teal-500/20 text-sky-600 dark:text-teal-400 font-bold text-xs border border-sky-300 dark:border-teal-500/30 flex-shrink-0">
+              {userInitials}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-slate-700 dark:text-stone-300 truncate">{currentUser?.email || "NGO User"}</p>
+              <p className="text-[10px] text-slate-400 dark:text-stone-600">Program Manager</p>
+            </div>
+            <LogOut size={14} className="text-slate-400 dark:text-stone-600 group-hover:text-rose-400 transition-colors flex-shrink-0" />
+          </div>
+        </div>
       </div>
 
+      {/* ── MAIN CONTENT AREA ───────────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        
-        <header className="flex items-center justify-between px-8 py-4 bg-white dark:bg-stone-800 border-b border-stone-200 dark:border-stone-700 transition-colors duration-200">
+
+        {/* Header */}
+        <header className="relative z-50 flex items-center justify-between px-8 py-4 bg-white/90 dark:bg-stone-900/60 backdrop-blur-xl border-b border-sky-200 dark:border-stone-700/50 shadow-sm dark:shadow-none">
           <div>
-            <h2 className="text-xl font-bold text-stone-800 dark:text-stone-100">Welcome back 👋</h2>
-            <p className="text-sm text-stone-500 dark:text-stone-400">
-              {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            <h2 className="text-xl font-bold text-slate-800 dark:text-stone-100">Welcome back 👋</h2>
+            <p className="text-sm text-slate-500 dark:text-stone-500">
+              {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
             </p>
           </div>
 
-          <div className="flex items-center gap-6">
-            <button className="relative p-2 text-stone-400 hover:text-stone-600 transition-colors">
-              <Bell size={20} />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+          <div className="flex items-center gap-4">
+
+            {/* ── Theme Toggle ── */}
+            <button
+              onClick={toggleTheme}
+              title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-sky-200 dark:border-stone-700 bg-sky-50 dark:bg-stone-800/60 text-sky-700 dark:text-stone-400 hover:bg-sky-100 dark:hover:bg-stone-700/50 transition-all"
+            >
+              {isDarkMode ? <Sun size={14} /> : <Moon size={14} />}
+              {isDarkMode ? "Light" : "Dark"}
             </button>
 
-            <div className="w-px h-8 bg-stone-200"></div>
+            {/* ── Bell ── */}
+            <button className="relative p-2 text-slate-400 dark:text-stone-500 hover:text-sky-600 dark:hover:text-stone-200 rounded-lg hover:bg-sky-50 dark:hover:bg-stone-700/40 transition-all">
+              <Bell size={20} />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full animate-pulse"></span>
+            </button>
 
+            <div className="w-px h-7 bg-sky-200 dark:bg-stone-700/70"></div>
+
+            {/* ── Profile Dropdown ── */}
             <div className="relative">
-              <button 
+              <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex items-center gap-3 hover:bg-stone-50 dark:hover:bg-stone-700/50 p-2 rounded-lg transition-colors"
+                className="flex items-center gap-3 hover:bg-sky-50 dark:hover:bg-stone-700/40 p-2 rounded-xl transition-all"
               >
-                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-teal-600 text-white font-bold text-sm">
+                <div className="flex items-center justify-center w-9 h-9 rounded-full bg-sky-100 dark:bg-teal-500/20 text-sky-600 dark:text-teal-400 font-bold text-sm border border-sky-300 dark:border-teal-500/30">
                   {userInitials}
                 </div>
                 <div className="hidden md:block text-left">
-                  <p className="text-sm font-bold text-stone-800 dark:text-stone-100 truncate max-w-[150px]">
+                  <p className="text-sm font-bold text-slate-800 dark:text-stone-200 truncate max-w-[150px]">
                     {currentUser?.email || "NGO User"}
                   </p>
-                  <p className="text-xs text-stone-500 dark:text-stone-400">Program Manager</p>
+                  <p className="text-xs text-slate-500 dark:text-stone-500">Program Manager</p>
                 </div>
-                <ChevronDown size={16} className="text-stone-400 dark:text-stone-500" />
+                <ChevronDown size={15} className="text-slate-400 dark:text-stone-500" />
               </button>
 
+              {/* Dropdown — z-[200] ensures it floats above every page component */}
               {isProfileOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl shadow-lg py-2 z-50 transition-colors">
-                  <Link to="/profile" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700/50 transition-colors">
-                    <User size={16} />
-                    My Profile
+                <div className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-stone-900 border border-sky-200 dark:border-stone-700/60 rounded-2xl shadow-xl dark:shadow-[0_8px_32px_rgba(0,0,0,0.7)] py-2 z-[200]">
+                  <Link
+                    to="/profile"
+                    onClick={() => setIsProfileOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 dark:text-stone-300 hover:bg-sky-50 dark:hover:bg-stone-700/40 hover:text-sky-700 dark:hover:text-stone-100 transition-colors mx-1 rounded-xl"
+                  >
+                    <User size={15} /> My Profile
                   </Link>
-                  <Link to="/settings" onClick={() => setIsProfileOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700/50 transition-colors">
-                    <Settings size={16} />
-                    Account Settings
+                  <Link
+                    to="/settings"
+                    onClick={() => setIsProfileOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 dark:text-stone-300 hover:bg-sky-50 dark:hover:bg-stone-700/40 hover:text-sky-700 dark:hover:text-stone-100 transition-colors mx-1 rounded-xl"
+                  >
+                    <Settings size={15} /> Account Settings
                   </Link>
-                  <div className="h-px bg-stone-100 dark:bg-stone-700 my-2"></div>
-                  <button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                    <LogOut size={16} />
-                    Log Out
+                  <div className="h-px bg-sky-100 dark:bg-stone-700/50 my-2 mx-3"></div>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-rose-500 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-300 transition-colors mx-1 rounded-xl w-[calc(100%-8px)]"
+                  >
+                    <LogOut size={15} /> Log Out
                   </button>
                 </div>
               )}
             </div>
+
           </div>
         </header>
 
-        {/* --- PAGE CONTENT (Outlet injects the active page here) --- */}
-        <main className="flex-1 overflow-y-auto p-8">
+        {/* ── PAGE CONTENT (Outlet renders child routes here) ── */}
+        <main className="flex-1 overflow-y-auto p-6 bg-sky-50 dark:bg-stone-950">
           <Outlet />
         </main>
-        
+
       </div>
     </div>
   );

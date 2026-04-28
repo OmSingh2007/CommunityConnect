@@ -7,23 +7,13 @@ import {
   MapPin, 
   Save, 
   CheckCircle2, 
-  AlertCircle,
-  Moon,
-  Sun
+  AlertCircle
 } from "lucide-react";
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Initialize directly from localStorage or document class
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("theme") === "dark" || 
-             document.documentElement.classList.contains("dark");
-    }
-    return false;
-  });
 
   // 1. We need TWO states now. One for editing, one for memory.
   const [profile, setProfile] = useState({
@@ -70,12 +60,6 @@ export default function SettingsPage() {
 
     fetchUserData();
   }, []);
-
-  const toggleDarkMode = () => {
-    const isDark = document.documentElement.classList.toggle("dark");
-    setIsDarkMode(isDark);
-    localStorage.setItem("theme", isDark ? "dark" : "light");
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -131,8 +115,8 @@ export default function SettingsPage() {
     <div className="max-w-3xl mx-auto space-y-8 pb-12">
       
       <div>
-        <h1 className="text-2xl font-bold text-stone-800 dark:text-stone-100 tracking-tight">Settings</h1>
-        <p className="text-stone-500 dark:text-stone-400 text-sm mt-1">
+        <h1 className="text-2xl font-bold text-slate-800 dark:text-stone-100 tracking-tight">Settings</h1>
+        <p className="text-slate-500 dark:text-stone-400 text-sm mt-1">
           Manage your organisation profile and regional preferences.
         </p>
       </div>
@@ -148,25 +132,18 @@ export default function SettingsPage() {
         </div>
       )}
 
-      <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-stone-800 border border-sky-200 dark:border-stone-700 rounded-2xl shadow-sm overflow-hidden">
         
-        <div className="p-8 border-b border-stone-100 dark:border-stone-700">
+        <div className="p-8 border-b border-sky-100 dark:border-stone-700">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xs font-bold tracking-wider text-stone-400 dark:text-stone-500 uppercase">
+            <h2 className="text-xs font-bold tracking-wider text-slate-400 dark:text-stone-500 uppercase">
               Organisation
             </h2>
-            <button
-              onClick={toggleDarkMode}
-              className="flex items-center gap-2 px-3 py-1.5 bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 rounded-lg text-sm font-medium hover:bg-stone-200 dark:hover:bg-stone-600 transition-colors"
-            >
-              {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
-              {isDarkMode ? "Light Mode" : "Dark Mode"}
-            </button>
           </div>
           
           <div className="space-y-6">
             <div>
-              <label className="flex items-center gap-2 text-xs font-bold tracking-wider text-stone-500 dark:text-stone-400 uppercase mb-2">
+              <label className="flex items-center gap-2 text-xs font-bold tracking-wider text-slate-500 dark:text-stone-400 uppercase mb-2">
                 <Building2 size={14} /> NGO Organisation Name
               </label>
               <input
@@ -174,13 +151,13 @@ export default function SettingsPage() {
                 name="ngoName"
                 value={profile.ngoName}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl text-sm text-stone-800 dark:text-stone-100 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all"
+                className="w-full px-4 py-2.5 bg-white dark:bg-stone-900 border border-sky-200 dark:border-stone-700 rounded-xl text-sm text-slate-800 dark:text-stone-100 focus:ring-2 focus:ring-sky-500 dark:focus:ring-teal-500 focus:border-sky-500 dark:focus:border-teal-500 outline-none transition-all"
               />
-              <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-1.5">This name appears on all exported reports.</p>
+              <p className="text-[11px] text-slate-400 dark:text-stone-500 mt-1.5">This name appears on all exported reports.</p>
             </div>
 
             <div>
-              <label className="flex items-center gap-2 text-xs font-bold tracking-wider text-stone-500 dark:text-stone-400 uppercase mb-2">
+              <label className="flex items-center gap-2 text-xs font-bold tracking-wider text-slate-500 dark:text-stone-400 uppercase mb-2">
                 <Mail size={14} /> Primary Contact Email
               </label>
               <input
@@ -188,9 +165,9 @@ export default function SettingsPage() {
                 name="email"
                 value={profile.email}
                 disabled
-                className="w-full px-4 py-2.5 bg-stone-50 dark:bg-stone-900/50 border border-stone-200 dark:border-stone-700 rounded-xl text-sm text-stone-500 dark:text-stone-400 cursor-not-allowed"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-stone-900/50 border border-sky-100 dark:border-stone-700 rounded-xl text-sm text-slate-500 dark:text-stone-400 cursor-not-allowed"
               />
-              <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-1.5">
+              <p className="text-[11px] text-slate-400 dark:text-stone-500 mt-1.5">
                 Used for system notifications. To change your login email, please contact support.
               </p>
             </div>
@@ -198,19 +175,19 @@ export default function SettingsPage() {
         </div>
 
         <div className="p-8">
-          <h2 className="text-xs font-bold tracking-wider text-stone-400 dark:text-stone-500 uppercase mb-6">
+          <h2 className="text-xs font-bold tracking-wider text-slate-400 dark:text-stone-500 uppercase mb-6">
             Regional
           </h2>
           
           <div>
-            <label className="flex items-center gap-2 text-xs font-bold tracking-wider text-stone-500 dark:text-stone-400 uppercase mb-2">
+            <label className="flex items-center gap-2 text-xs font-bold tracking-wider text-slate-500 dark:text-stone-400 uppercase mb-2">
               <MapPin size={14} /> Default Operating Region
             </label>
             <select
               name="region"
               value={profile.region}
               onChange={handleChange}
-              className="w-full px-4 py-2.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl text-sm text-stone-800 dark:text-stone-100 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all appearance-none"
+              className="w-full px-4 py-2.5 bg-white dark:bg-stone-900 border border-sky-200 dark:border-stone-700 rounded-xl text-sm text-slate-800 dark:text-stone-100 focus:ring-2 focus:ring-sky-500 dark:focus:ring-teal-500 focus:border-sky-500 dark:focus:border-teal-500 outline-none transition-all appearance-none"
             >
               <option value="Mumbai Metropolitan Region">Mumbai Metropolitan Region</option>
               <option value="Pune District">Pune District</option>
@@ -218,7 +195,7 @@ export default function SettingsPage() {
               <option value="Palghar District">Palghar District</option>
               <option value="Other / National">Other / National</option>
             </select>
-            <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-1.5">Filters dashboard data to your primary field area.</p>
+            <p className="text-[11px] text-slate-400 dark:text-stone-500 mt-1.5">Filters dashboard data to your primary field area.</p>
           </div>
         </div>
       </div>
@@ -228,7 +205,7 @@ export default function SettingsPage() {
         <button 
           onClick={() => setProfile(originalProfile)}
           disabled={!hasChanges}
-          className="text-sm font-semibold text-stone-400 hover:text-stone-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="text-sm font-semibold text-slate-400 dark:text-stone-400 hover:text-slate-600 dark:hover:text-stone-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Reset to defaults
         </button>
@@ -240,10 +217,10 @@ export default function SettingsPage() {
           className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all duration-150
             ${
               !hasChanges 
-                ? "bg-stone-200 text-stone-400 cursor-not-allowed shadow-none" 
+                ? "bg-slate-200 dark:bg-stone-200 text-slate-400 dark:text-stone-400 cursor-not-allowed shadow-none" 
                 : saving 
-                ? "bg-emerald-400 text-white cursor-wait" 
-                : "bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95"
+                ? "bg-sky-400 dark:bg-teal-400 text-white cursor-wait" 
+                : "bg-sky-600 dark:bg-teal-600 text-white hover:bg-sky-700 dark:hover:bg-teal-700 active:scale-95"
             }`}
         >
           {saving ? (
