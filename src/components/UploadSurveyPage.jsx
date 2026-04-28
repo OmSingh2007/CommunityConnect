@@ -165,6 +165,15 @@ export default function UploadSurveyPage() {
           ngoId:"mumbai_relief_02",
           uploaderEmail: auth.currentUser?.email
         });
+
+        // Create a notification for the dashboard
+        await addDoc(collection(db, "notifications"), {
+          title: "New Survey Uploaded",
+          message: `AI extracted a ${aiData.urgency || 'Pending'} urgency survey for ${aiData.category || 'Uncategorized'} at ${aiData.location || 'Unknown Location'}.`,
+          ngoId: "mumbai_relief_02",
+          isRead: false,
+          timestamp: serverTimestamp()
+        });
       }
 
       setSubmitted(true);

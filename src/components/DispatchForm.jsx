@@ -25,6 +25,15 @@ export default function DispatchForm() {
         createdAt: serverTimestamp()
       });
 
+      // Create a notification for the dashboard
+      await addDoc(collection(db, "notifications"), {
+        title: "Manual Dispatch Issued",
+        message: `Emergency: ${taskTitle} has been dispatched to the field.`,
+        ngoId: "mumbai_relief_02",
+        isRead: false,
+        timestamp: serverTimestamp()
+      });
+
       // Clear the form
       setTaskTitle("");
       setDescription("");

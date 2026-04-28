@@ -3,7 +3,7 @@ import { Users, MapPin, AlertCircle, CheckCircle2, X, ShieldCheck } from 'lucide
 import { db } from "../firebase";
 import DispatchForm from './DispatchForm';
 import IncidentMap from './IncidentMap';
-import { collection, query, where, onSnapshot, doc, updateDoc } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
 
 export default function VolunteerHub() {
   const [surveys, setSurveys] = useState([]);
@@ -33,15 +33,11 @@ export default function VolunteerHub() {
   // 2. Add the real-time Firebase listener
   // Fetch real-time volunteers (FILTERED BY NGO)
   useEffect(() => {
-    // 1. Define the ID of the currently logged-in NGO
-    const currentNgoId = "mumbai_relief_02"; 
-
-    // 2. Create a specific query instead of fetching the whole collection
+    // Fetch all volunteers for testing (Removed the ngoId filter)
     const volunteersRef = collection(db, "volunteers");
-    const q = query(volunteersRef, where("ngoId", "==", currentNgoId));
-
-    // 3. Listen ONLY to the results of that query
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    
+    // 3. Listen to the entire collection
+    const unsubscribe = onSnapshot(volunteersRef, (snapshot) => {
       const liveData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -74,34 +70,61 @@ export default function VolunteerHub() {
         .map(vol => vol.fcmToken)
         .filter(token => token); 
 
-      // 2. Update Firebase database status
+      // 2. Update Firebase database status for the survey
       await updateDoc(surveyRef, {
         status: "Deployed",
         assignedTeam: selectedTeam.map(v => v.name)
       });
-      
-      // 3. PING THE EXPRESS SERVER TO SEND NOTIFICATIONS!
-      if (extractedTokens.length > 0) {
-        await fetch("http://localhost:5000/api/dispatch-alert", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tokens: extractedTokens,
-            category: assigningSurvey.category,
-            location: assigningSurvey.location
-          })
+
+      // 3. Create tasks for volunteers so they see them on their mobile app
+      const taskPromises = selectedTeam.map(vol => {
+        return addDoc(collection(db, "tasks"), {
+          title: `Emergency: ${assigningSurvey.category || 'Survey'}`,
+          location: assigningSurvey.location || "Pending Location",
+          priority: assigningSurvey.urgency === "Critical" ? "High" : "Standard",
+          status: "Pending",
+          ngoId: assigningSurvey.ngoId || "mumbai_relief_02",
+          assignedTo: vol.id,
+          surveyId: assigningSurvey.id,
+          createdAt: serverTimestamp()
         });
+      });
+      await Promise.all(taskPromises);
+
+      // Create a dashboard notification for the web portal
+      await addDoc(collection(db, "notifications"), {
+        title: "Team Deployed",
+        message: `Deployed ${selectedTeam.length} responder(s) for ${assigningSurvey.category || 'Survey'} at ${assigningSurvey.location || 'Pending Location'}.`,
+        ngoId: assigningSurvey.ngoId || "mumbai_relief_02",
+        isRead: false,
+        timestamp: serverTimestamp()
+      });
+
+      // 4. Update volunteers' statuses in Firebase to "Deployed"
+      const volunteerPromises = selectedTeam.map(vol => 
+        updateDoc(doc(db, "volunteers", vol.id), {
+          status: "Deployed"
+        })
+      );
+      await Promise.all(volunteerPromises);
+      
+      // 5. PING THE EXPRESS SERVER TO SEND NOTIFICATIONS!
+      if (extractedTokens.length > 0) {
+        try {
+          await fetch("http://localhost:5000/api/dispatch-alert", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              tokens: extractedTokens,
+              category: assigningSurvey.category,
+              location: assigningSurvey.location
+            })
+          });
+        } catch (fetchErr) {
+          console.warn("Notification server down, but deployment succeeded.", fetchErr);
+        }
       }
 
-      // Update local mock data state
-      setVolunteers(prevVolunteers => 
-        prevVolunteers.map(vol => 
-          selectedTeam.find(selected => selected.id === vol.id) 
-            ? { ...vol, status: "Deployed" } 
-            : vol
-        )
-      );
-      
       setAssigningSurvey(null);
       setSelectedTeam([]);
     } catch (error) {
@@ -206,11 +229,11 @@ export default function VolunteerHub() {
               <div key={vol.id} className="p-5 flex items-center justify-between hover:bg-sky-50/50 dark:hover:bg-stone-800/50 transition-colors">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-sky-100 dark:bg-teal-900/40 flex items-center justify-center text-sky-700 dark:text-teal-400 font-bold">
-                    {vol.name.charAt(0)}
+                    {vol.name ? vol.name.charAt(0).toUpperCase() : '?'}
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-800 dark:text-stone-100 text-sm">{vol.name}</h3>
-                    <p className="text-xs text-slate-500 dark:text-stone-400">{vol.role}</p>
+                    <h3 className="font-bold text-slate-800 dark:text-stone-100 text-sm">{vol.name || "Unknown Volunteer"}</h3>
+                    <p className="text-xs text-slate-500 dark:text-stone-400">{vol.role || "Volunteer"}</p>
                   </div>
                 </div>
                 
@@ -260,8 +283,8 @@ export default function VolunteerHub() {
                     }`}
                   >
                     <div>
-                      <h3 className="font-bold text-slate-800 dark:text-stone-100 text-sm">{vol.name}</h3>
-                      <p className="text-xs text-slate-500 dark:text-stone-400">{vol.role}</p>
+                      <h3 className="font-bold text-slate-800 dark:text-stone-100 text-sm">{vol.name || "Unknown Volunteer"}</h3>
+                      <p className="text-xs text-slate-500 dark:text-stone-400">{vol.role || "Volunteer"}</p>
                     </div>
                     <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
                       isSelected 
