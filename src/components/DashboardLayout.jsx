@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect} from "react";
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
-import { auth } from "../firebase";
+import { auth,db } from "../firebase";
+import { collection, query, where, onSnapshot, doc, updateDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import {
   Bell,
@@ -15,12 +16,14 @@ import {
   Users,
   Sun,
   Moon,
+  CheckCheck
 } from "lucide-react";
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  
 
   // ── Theme: read localStorage, default = dark ──────────────────────
   const [isDarkMode, setIsDarkMode] = useState(
@@ -52,6 +55,53 @@ export default function DashboardLayout() {
     } catch (error) {
       console.error("Failed to log out", error);
     }
+  };
+  // ── NOTIFICATION STATE & LOGIC ──────────────────────────────────────
+  const [notifications, setNotifications] = useState([]);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const currentNgoId = "mumbai_relief_02";
+
+    const q = query(
+      collection(db, "notifications"),
+      where("ngoId", "==", currentNgoId)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const notifData = [];
+      snapshot.forEach((doc) => {
+        notifData.push({ id: doc.id, ...doc.data() });
+      });
+
+      // Sort newest to the top
+      notifData.sort((a, b) => {
+        const timeA = a.timestamp?.toMillis() || 0;
+        const timeB = b.timestamp?.toMillis() || 0;
+        return timeB - timeA;
+      });
+
+      setNotifications(notifData);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  const markAsRead = async (id) => {
+    try {
+      await updateDoc(doc(db, "notifications", id), { isRead: true });
+    } catch (error) {
+      console.error("Error updating notification:", error);
+    }
+  };
+
+  const markAllAsRead = () => {
+    notifications.forEach(n => {
+      if (!n.isRead) markAsRead(n.id);
+    });
   };
 
   // ── Shared nav-link class builder ─────────────────────────────────
@@ -153,10 +203,66 @@ export default function DashboardLayout() {
             </button>
 
             {/* ── Bell ── */}
-            <button className="relative p-2 text-slate-400 dark:text-stone-500 hover:text-sky-600 dark:hover:text-stone-200 rounded-lg hover:bg-sky-50 dark:hover:bg-stone-700/40 transition-all">
-              <Bell size={20} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full animate-pulse"></span>
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => setIsNotifOpen(!isNotifOpen)}
+                className="relative p-2 text-slate-400 dark:text-stone-500 hover:text-sky-600 dark:hover:text-stone-200 rounded-lg hover:bg-sky-50 dark:hover:bg-stone-700/40 transition-all"
+              >
+                <Bell size={20} />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-rose-500 border-2 border-white dark:border-stone-900 rounded-full">
+                    <span className="absolute inset-0 rounded-full bg-rose-500 animate-ping opacity-75"></span>
+                  </span>
+                )}
+              </button>
+
+              {/* Notification Dropdown Menu */}
+              {isNotifOpen && (
+                <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-stone-900 border border-sky-200 dark:border-stone-700/60 rounded-2xl shadow-xl dark:shadow-[0_8px_32px_rgba(0,0,0,0.7)] overflow-hidden z-[200]">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-sky-100 dark:border-stone-800 bg-slate-50 dark:bg-stone-950/50">
+                    <h3 className="font-bold text-slate-800 dark:text-stone-200 text-sm">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <button 
+                        onClick={markAllAsRead}
+                        className="text-[10px] font-bold text-sky-600 dark:text-teal-400 hover:text-sky-700 dark:hover:text-teal-300 uppercase tracking-wider flex items-center gap-1"
+                      >
+                        <CheckCheck size={12} /> Mark all read
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="max-h-[300px] overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-6 text-center text-slate-500 dark:text-stone-500 text-sm">
+                        You're all caught up!
+                      </div>
+                    ) : (
+                      notifications.map(notif => (
+                        <div 
+                          key={notif.id}
+                          onClick={() => markAsRead(notif.id)}
+                          className={`p-4 border-b border-sky-50 dark:border-stone-800/50 cursor-pointer transition-colors ${
+                            notif.isRead 
+                              ? "bg-transparent opacity-60" 
+                              : "bg-sky-50/50 dark:bg-teal-500/5 hover:bg-sky-100/50 dark:hover:bg-teal-500/10"
+                          }`}
+                        >
+                          <div className="flex justify-between items-start mb-1">
+                            <h4 className={`text-sm font-bold ${notif.isRead ? "text-slate-600 dark:text-stone-400" : "text-slate-800 dark:text-stone-200"}`}>
+                              {notif.title}
+                            </h4>
+                            {!notif.isRead && <span className="w-2 h-2 bg-sky-500 dark:bg-teal-500 rounded-full mt-1.5 flex-shrink-0"></span>}
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-stone-400 leading-relaxed">
+                            {notif.message}
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="w-px h-7 bg-sky-200 dark:bg-stone-700/70"></div>
 

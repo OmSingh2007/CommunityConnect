@@ -318,7 +318,7 @@ export default function DashboardPage() {
 
       {/* â”€â”€ EDIT MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {editingSurvey && (
-        <div className="fixed inset-0 bg-stone-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-stone-950/85 backdrop-blur-md z-[999] flex items-center justify-center p-4">
           <div className="bg-stone-900 border border-stone-700/60 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between p-6 border-b border-stone-700/50 bg-stone-950/30">
               <h2 className="text-base font-bold text-stone-100">Review AI Extraction</h2>
@@ -375,7 +375,7 @@ export default function DashboardPage() {
       )}
       {/* ── EXPANDED MAP MODAL ─────────────────────────────────────────────────── */}
       {isMapExpanded && (
-        <div className="fixed inset-0 bg-stone-950/85 backdrop-blur-md z-[100] flex items-center justify-center p-6">
+        <div className="fixed inset-0 bg-stone-950/85 backdrop-blur-md z-[999] flex items-center justify-center p-6">
           <div className="bg-stone-900 border border-teal-500/30 rounded-2xl shadow-2xl w-full h-full max-w-6xl max-h-[85vh] overflow-hidden flex flex-col">
             
             {/* Modal Header */}
