@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Users, MapPin, AlertCircle, CheckCircle2, X, ShieldCheck } from 'lucide-react';
 import { db } from "../firebase";
 import DispatchForm from './DispatchForm';
+import IncidentMap from './IncidentMap';
 import { collection, query, where, onSnapshot, doc, updateDoc } from "firebase/firestore";
 
 export default function VolunteerHub() {
@@ -126,11 +127,18 @@ export default function VolunteerHub() {
           <DispatchForm /> 
         </div>
 
-        {/* Right Side: A placeholder for your future map or analytics */}
-        <div className="lg:col-span-2 bg-sky-50/50 dark:bg-stone-900/50 rounded-2xl border-2 border-dashed border-sky-200 dark:border-stone-800 flex items-center justify-center h-full min-h-[250px] transition-colors">
-          <p className="text-slate-400 dark:text-stone-500 font-medium tracking-wide text-sm">
-            Live Deployment Map / Analytics Space
-          </p>
+        {/* Right Side: Active Incident Map */}
+        <div className="lg:col-span-2 bg-stone-900 rounded-2xl border border-stone-800 flex flex-col h-full min-h-[300px] overflow-hidden relative shadow-lg">
+          <div className="absolute top-4 left-4 z-[400] pointer-events-none">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-900/90 backdrop-blur-md border border-rose-500/30 text-rose-400 text-[10px] font-bold uppercase tracking-widest shadow-xl">
+              <span className="w-2 h-2 bg-rose-500 rounded-full animate-pulse"></span>
+              Live Crisis Zones
+            </span>
+          </div>
+          
+          <div className="flex-1 w-full h-full z-0">
+            <IncidentMap />
+          </div>
         </div>
       </div>
 

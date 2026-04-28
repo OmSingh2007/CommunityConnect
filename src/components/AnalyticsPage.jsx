@@ -1,91 +1,125 @@
 import { useState, useEffect } from 'react';
-import { PieChart, BarChart3 } from 'lucide-react';
-import { db, auth } from "../firebase";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from '../firebase';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { 
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
+  PieChart, Pie, Cell, LineChart, Line, CartesianGrid 
+} from 'recharts';
+import { Activity, PieChart as PieIcon, TrendingUp } from 'lucide-react';
 
-export default function AnalyticsPage() {
+// Premium UI Colors
+const COLORS = ['#14b8a6', '#f43f5e', '#f97316', '#3b82f6', '#8b5cf6'];
+
+export default function Analytics() {
   const [surveys, setSurveys] = useState([]);
 
   useEffect(() => {
-    if (!auth.currentUser) return;
-    const q = query(
-      collection(db, "surveys"),
-      where("uploaderEmail", "==", auth.currentUser.email)
-    );
+    // Syncing with your strict multi-tenancy ID
+    const currentNgoId = "mumbai_relief_02"; 
+    const q = query(collection(db, "surveys"), where("ngoId", "==", currentNgoId));
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const surveyData = [];
-      snapshot.forEach((doc) => surveyData.push({ id: doc.id, ...doc.data() }));
-      setSurveys(surveyData);
+      const data = snapshot.docs.map(doc => doc.data());
+      setSurveys(data);
     });
+
     return () => unsubscribe();
   }, []);
 
-  const total = surveys.length || 1;
-  const critical = surveys.filter(s => s.urgency === 'Critical').length;
-  const high     = surveys.filter(s => s.urgency === 'High').length;
-  const medium   = surveys.filter(s => s.urgency === 'Medium').length;
-  const low      = surveys.filter(s => s.urgency === 'Low').length;
+  // --- DATA CRUNCHING ---
 
-  const categories = {
-    "Healthcare":        surveys.filter(s => s.category === 'Healthcare').length,
-    "Education":         surveys.filter(s => s.category === 'Education').length,
-    "Water & Sanitation":surveys.filter(s => s.category === 'Water & Sanitation').length,
-    "Infrastructure":    surveys.filter(s => s.category === 'Infrastructure').length,
-    "Other":             surveys.filter(s => s.category === 'Other').length,
-  };
+  // 1. Urgency Breakdown (For Pie Chart)
+  const urgencyCounts = surveys.reduce((acc, survey) => {
+    acc[survey.urgency] = (acc[survey.urgency] || 0) + 1;
+    return acc;
+  }, {});
+  const urgencyData = Object.keys(urgencyCounts).map(key => ({ name: key, value: urgencyCounts[key] }));
 
-  // Reusable bar row
-  const Bar = ({ label, count, color }) => (
-    <div>
-      <div className="flex justify-between text-sm mb-1">
-        <span className="font-bold text-slate-700 dark:text-stone-300">{label}</span>
-        <span className="text-slate-500 dark:text-stone-400">
-          {count} ({Math.round((count / total) * 100)}%)
-        </span>
-      </div>
-      <div className="w-full bg-sky-100 dark:bg-stone-700/40 rounded-full h-2.5">
-        <div className={`${color} h-2.5 rounded-full transition-all duration-500`} style={{ width: `${(count / total) * 100}%` }}></div>
-      </div>
-    </div>
-  );
+  // 2. Category Breakdown (For Bar Chart)
+  const categoryCounts = surveys.reduce((acc, survey) => {
+    acc[survey.category] = (acc[survey.category] || 0) + 1;
+    return acc;
+  }, {});
+  const categoryData = Object.keys(categoryCounts).map(key => ({ name: key, count: categoryCounts[key] }));
+
+  // 3. Status Pipeline (For Line/Area Chart)
+  const statusCounts = surveys.reduce((acc, survey) => {
+    acc[survey.status] = (acc[survey.status] || 0) + 1;
+    return acc;
+  }, {});
+  const statusData = [
+    { name: 'Pending', count: statusCounts['Pending'] || 0 },
+    { name: 'Reviewed', count: statusCounts['Reviewed'] || 0 },
+    { name: 'Deployed', count: statusCounts['Deployed'] || 0 },
+    { name: 'Resolved', count: statusCounts['Resolved'] || 0 }
+  ];
 
   return (
-    <div className="space-y-8 pb-12">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800 dark:text-stone-100 tracking-tight">Donor Transparency Report</h1>
-        <p className="text-slate-500 dark:text-stone-400 text-sm mt-1">Real-time breakdown of community needs and urgency.</p>
+    <div className="min-h-screen p-6 space-y-6">
+      
+      {/* Header */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-stone-100 tracking-tight">Relief Analytics</h2>
+        <p className="text-slate-500 dark:text-stone-400 text-sm mt-1">Live data aggregation for active field zones.</p>
       </div>
 
+      {/* Bento Grid for Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-        {/* ── Urgency Distribution ── */}
-        <div className="bg-white dark:bg-stone-900/60 backdrop-blur-xl border border-sky-200 dark:border-stone-700/50 rounded-2xl shadow-sm dark:shadow-none p-6 hover:border-sky-300 dark:hover:border-stone-600/60 transition-all">
-          <div className="flex items-center gap-2 mb-6 border-b border-sky-100 dark:border-stone-700/50 pb-4">
-            <div className="p-2 bg-rose-50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 rounded-lg border border-transparent dark:border-rose-500/20">
-              <BarChart3 size={20} />
-            </div>
-            <h2 className="text-lg font-bold text-slate-800 dark:text-stone-100">Urgency Distribution</h2>
+        
+        {/* Chart 1: Urgency Distribution */}
+        <div className="bg-white dark:bg-stone-900/60 backdrop-blur-xl border border-sky-200 dark:border-stone-700/50 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-6">
+            <PieIcon size={18} className="text-teal-500" />
+            <h3 className="font-bold text-slate-800 dark:text-stone-200">Needs by Urgency</h3>
           </div>
-          <div className="space-y-5">
-            <Bar label="Critical" count={critical} color="bg-rose-500" />
-            <Bar label="High"     count={high}     color="bg-orange-400" />
-            <Bar label="Medium"   count={medium}   color="bg-amber-400" />
-            <Bar label="Low"      count={low}      color="bg-slate-300 dark:bg-stone-500" />
+          <div className="h-[250px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={urgencyData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                  {urgencyData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={{ backgroundColor: '#1c1917', border: 'none', borderRadius: '8px', color: '#fff' }} />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* ── Category Breakdown ── */}
-        <div className="bg-white dark:bg-stone-900/60 backdrop-blur-xl border border-sky-200 dark:border-stone-700/50 rounded-2xl shadow-sm dark:shadow-none p-6 hover:border-sky-300 dark:hover:border-stone-600/60 transition-all">
-          <div className="flex items-center gap-2 mb-6 border-b border-sky-100 dark:border-stone-700/50 pb-4">
-            <div className="p-2 bg-sky-50 dark:bg-teal-500/15 text-sky-600 dark:text-teal-400 rounded-lg border border-transparent dark:border-teal-500/20">
-              <PieChart size={20} />
-            </div>
-            <h2 className="text-lg font-bold text-slate-800 dark:text-stone-100">Needs by Category</h2>
+        {/* Chart 2: Category Breakdown */}
+        <div className="bg-white dark:bg-stone-900/60 backdrop-blur-xl border border-sky-200 dark:border-stone-700/50 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-6">
+            <Activity size={18} className="text-rose-500" />
+            <h3 className="font-bold text-slate-800 dark:text-stone-200">Incident Categories</h3>
           </div>
-          <div className="space-y-5">
-            {Object.entries(categories).map(([cat, count]) => (
-              <Bar key={cat} label={cat} count={count} color="bg-sky-500 dark:bg-teal-500" />
-            ))}
+          <div className="h-[250px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={categoryData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#292524" vertical={false} />
+                <XAxis dataKey="name" stroke="#78716c" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{ backgroundColor: '#1c1917', border: 'none', borderRadius: '8px', color: '#fff' }} />
+                <Bar dataKey="count" fill="#14b8a6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Chart 3: Deployment Pipeline (Spans full width at bottom) */}
+        <div className="lg:col-span-2 bg-white dark:bg-stone-900/60 backdrop-blur-xl border border-sky-200 dark:border-stone-700/50 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-6">
+            <TrendingUp size={18} className="text-orange-500" />
+            <h3 className="font-bold text-slate-800 dark:text-stone-200">Resolution Pipeline</h3>
+          </div>
+          <div className="h-[250px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={statusData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#292524" vertical={false} />
+                <XAxis dataKey="name" stroke="#78716c" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#78716c" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                <Tooltip contentStyle={{ backgroundColor: '#1c1917', border: 'none', borderRadius: '8px', color: '#fff' }} />
+                <Line type="monotone" dataKey="count" stroke="#f97316" strokeWidth={3} dot={{ r: 6, fill: '#f97316', strokeWidth: 2, stroke: '#1c1917' }} activeDot={{ r: 8 }} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
 

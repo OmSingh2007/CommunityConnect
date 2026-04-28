@@ -15,14 +15,13 @@ export default function DispatchForm() {
     setIsSending(true);
     
     try {
-      // 1. Changed "tasks" to "surveys" so it goes to the right place
       await addDoc(collection(db, "surveys"), {
-        location: taskTitle,         // Matches the bold title on your card
-        summary: description,        // Matches the description text
-        category: "Manual Dispatch", // Shows up in the top right of the card
-        urgency: "Critical",         // Triggers your red priority badge!
-        status: "Pending",           // Keeps it in the "Pending" column
-        ngoId: "mumbai_relief_02",   // Keeps our multi-tenancy secure
+        location: taskTitle,         
+        summary: description,        
+        category: "Manual Dispatch", 
+        urgency: "Critical",         
+        status: "Pending",           
+        ngoId: "mumbai_relief_02",   
         createdAt: serverTimestamp()
       });
 
@@ -40,39 +39,57 @@ export default function DispatchForm() {
   };
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 max-w-md">
-      <h2 className="text-xl font-bold text-gray-800 mb-4">Dispatch Command Center</h2>
+    <div className="bg-white dark:bg-stone-900/60 backdrop-blur-xl border border-sky-200 dark:border-stone-700/50 rounded-2xl p-6 shadow-sm h-full flex flex-col transition-colors duration-300">
       
-      <form onSubmit={handleDispatch} className="space-y-4">
+      <div className="mb-6">
+        <h2 className="text-xl font-bold text-slate-800 dark:text-stone-100 tracking-tight">
+          Dispatch Command Center
+        </h2>
+        <p className="text-xs text-slate-500 dark:text-stone-400 mt-1">
+          Manually inject high-priority tasks into the field.
+        </p>
+      </div>
+
+      <form onSubmit={handleDispatch} className="flex-1 flex flex-col gap-5">
+        
+        {/* Emergency Title Input */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Emergency Title</label>
+          <label className="block text-[10px] font-bold text-slate-500 dark:text-stone-500 uppercase tracking-widest mb-2">
+            Emergency Title
+          </label>
           <input 
             type="text" 
             placeholder="e.g., Flood Rescue at Sector 4"
             value={taskTitle}
             onChange={(e) => setTaskTitle(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
+            className="w-full px-4 py-3 bg-slate-50 dark:bg-stone-950/40 border border-sky-200 dark:border-stone-700/60 rounded-xl text-sm text-slate-800 dark:text-stone-200 focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500/50 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-stone-600"
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Details & Location</label>
+        {/* Details & Location Textarea */}
+        <div className="flex-1">
+          <label className="block text-[10px] font-bold text-slate-500 dark:text-stone-500 uppercase tracking-widest mb-2">
+            Details & Location
+          </label>
           <textarea 
+            rows={5}
             placeholder="We need 50 food packets immediately..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none h-24"
+            className="w-full h-full min-h-[120px] px-4 py-3 bg-slate-50 dark:bg-stone-950/40 border border-sky-200 dark:border-stone-700/60 rounded-xl text-sm text-slate-800 dark:text-stone-200 focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500/50 outline-none resize-none transition-all placeholder:text-slate-400 dark:placeholder:text-stone-600"
           />
         </div>
 
+        {/* Submit Button */}
         <button 
           type="submit" 
           disabled={isSending}
-          className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-lg flex justify-center items-center gap-2 transition-colors"
+          className="w-full mt-2 py-3.5 bg-teal-600 hover:bg-teal-500 dark:bg-teal-600/90 dark:hover:bg-teal-500 text-white font-bold text-sm rounded-xl flex justify-center items-center gap-2 transition-all shadow-[0_0_20px_rgba(13,148,136,0.2)] dark:shadow-[0_0_20px_rgba(45,212,191,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isSending ? "Transmitting..." : "DISPATCH TO TEAM"}
-          {!isSending && <Send size={18} />}
+          {isSending ? "TRANSMITTING..." : "DISPATCH TO TEAM"} 
+          {!isSending && <Send size={16} className="ml-1" />}
         </button>
+
       </form>
     </div>
   );
