@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, query, where } from "firebase/firestore";
 import { db } from "../firebase"; // Adjust path if needed
 import { Send } from 'lucide-react';
 
@@ -15,6 +15,7 @@ export default function DispatchForm() {
     setIsSending(true);
     
     try {
+      // 1. Save Survey to Firebase
       await addDoc(collection(db, "surveys"), {
         location: taskTitle,         
         summary: description,        
@@ -25,7 +26,7 @@ export default function DispatchForm() {
         createdAt: serverTimestamp()
       });
 
-      // Create a notification for the dashboard
+      // 2. Create Web Dashboard Notification
       await addDoc(collection(db, "notifications"), {
         title: "Manual Dispatch Issued",
         message: `Emergency: ${taskTitle} has been dispatched to the field.`,
@@ -34,10 +35,43 @@ export default function DispatchForm() {
         timestamp: serverTimestamp()
       });
 
+      // 3. Fetch FCM Tokens for Push Notifications
+      // This looks through your database to find the phones of your volunteers
+      const q = query(collection(db, "volunteers"), where("ngoId", "==", "mumbai_relief_02"));
+      const querySnapshot = await getDocs(q);
+      
+      const deviceTokens = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.fcmToken) {
+          deviceTokens.push(data.fcmToken);
+        }
+      });
+
+      // 4. Trigger the live Render Backend!
+      // This uses your Vercel Environment Variable automatically
+      if (deviceTokens.length > 0) {
+        const API_BASE_URL = import.meta.env.VITE_API_URL;
+        
+        const response = await fetch(`${API_BASE_URL}/api/dispatch-alert`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tokens: deviceTokens,
+            category: "Manual Dispatch",
+            location: taskTitle
+          }),
+        });
+
+        if (!response.ok) console.error("Render Backend failed to send push alerts.");
+      } else {
+        console.warn("No volunteer devices found with active FCM tokens.");
+      }
+
       // Clear the form
       setTaskTitle("");
       setDescription("");
-      alert("Task Dispatched Successfully!");
+      alert("Task Dispatched & Team Alerted Successfully!");
       
     } catch (error) {
       console.error("Error dispatching task:", error);
