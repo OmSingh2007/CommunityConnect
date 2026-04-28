@@ -9,8 +9,10 @@ import {
   ClipboardList,
   ShieldCheck,
   AlertTriangle,
-  Users
+  Users,
+  Maximize2
 } from "lucide-react";
+import VolunteerMap from "./VolunteerMap";
 
 export default function DashboardPage() {
   const [surveys, setSurveys] = useState([]);
@@ -20,6 +22,7 @@ export default function DashboardPage() {
   const [editingSurvey, setEditingSurvey] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [activeVolunteersCount, setActiveVolunteersCount] = useState(0);
+  const [isMapExpanded, setIsMapExpanded] = useState(false);
   // --- Real-time Firebase Listener ---
   useEffect(() => {
     // 1. We still check if the user is logged in
@@ -139,31 +142,28 @@ export default function DashboardPage() {
       <div className="grid grid-cols-3 gap-4" style={{height: '260px'}}>
 
         {/* LEFT: Live Deployment Map Placeholder */}
-        <div className="col-span-2 relative bg-white dark:bg-stone-900/60 backdrop-blur-xl border border-sky-200 dark:border-stone-700/50 rounded-2xl overflow-hidden hover:border-sky-300 dark:hover:border-teal-500/30 hover:shadow-md dark:hover:shadow-[0_0_30px_rgba(45,212,191,0.06)] transition-all duration-300">
-          <svg className="absolute inset-0 w-full h-full opacity-10" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <pattern id="bento-grid" width="32" height="32" patternUnits="userSpaceOnUse">
-                <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#2dd4bf" strokeWidth="0.5"/>
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#bento-grid)" />
-          </svg>
-          <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 via-transparent to-transparent pointer-events-none"></div>
-          <div className="absolute top-4 left-5">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-100 dark:bg-teal-500/15 border border-sky-300 dark:border-teal-500/30 text-sky-600 dark:text-teal-400 text-[10px] font-bold uppercase tracking-widest">
-              <span className="w-1.5 h-1.5 bg-sky-400 dark:bg-teal-400 rounded-full animate-pulse"></span>
-              Live
+        <div 
+          onClick={() => setIsMapExpanded(true)}
+          className="col-span-2 relative bg-stone-900 border border-sky-200 dark:border-stone-700/50 rounded-2xl overflow-hidden hover:border-teal-500 hover:shadow-lg cursor-pointer transition-all duration-300 group"
+        >
+          {/* Overlay Tags (z-[400] to sit above Leaflet tiles) */}
+          <div className="absolute top-4 left-5 z-[400]">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-900/80 backdrop-blur-md border border-teal-500/50 text-teal-400 text-[10px] font-bold uppercase tracking-widest shadow-lg">
+              <span className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-pulse"></span>
+              Live Tracking
             </span>
           </div>
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-            <div className="relative">
-              <div className="w-10 h-10 rounded-full border-2 border-sky-400/40 dark:border-teal-500/40 flex items-center justify-center">
-                <div className="w-3 h-3 bg-sky-400 dark:bg-teal-400 rounded-full animate-pulse shadow-[0_0_12px_rgba(56,189,248,0.6)] dark:shadow-[0_0_12px_rgba(45,212,191,0.6)]"></div>
-              </div>
-              <div className="absolute inset-0 rounded-full border border-sky-400/20 dark:border-teal-500/20 animate-ping"></div>
-            </div>
-            <p className="text-slate-800 dark:text-stone-300 font-semibold text-sm">Live Deployment Map</p>
-            <p className="text-slate-500 dark:text-stone-600 text-xs">Geospatial data — connect your map library here</p>
+          
+          {/* Hover "Expand" Hint */}
+          <div className="absolute top-4 right-5 z-[400] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-900/90 text-stone-200 text-xs font-bold border border-white/10">
+              <Maximize2 size={14} /> Expand Map
+            </span>
+          </div>
+
+          {/* The Static Map Thumbnail */}
+          <div className="absolute inset-0 z-0 pointer-events-none">
+            <VolunteerMap interactive={false} />
           </div>
         </div>
 
@@ -366,6 +366,36 @@ export default function DashboardPage() {
                 {isSaving ? "Saving..." : <><Save size={15} /> Save & Verify</>}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* ── EXPANDED MAP MODAL ─────────────────────────────────────────────────── */}
+      {isMapExpanded && (
+        <div className="fixed inset-0 bg-stone-950/85 backdrop-blur-md z-[100] flex items-center justify-center p-6">
+          <div className="bg-stone-900 border border-teal-500/30 rounded-2xl shadow-2xl w-full h-full max-w-6xl max-h-[85vh] overflow-hidden flex flex-col">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-stone-700/50 bg-stone-950/50">
+              <div className="flex items-center gap-3">
+                <div className="w-2.5 h-2.5 bg-teal-400 rounded-full animate-pulse"></div>
+                <h2 className="text-lg font-bold text-stone-100">Live Field Deployment</h2>
+                <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-stone-800 text-stone-400 border border-stone-700">
+                  {activeVolunteersCount} Active Responders
+                </span>
+              </div>
+              <button 
+                onClick={() => setIsMapExpanded(false)} 
+                className="flex items-center gap-2 px-3 py-1.5 bg-stone-800 hover:bg-rose-500/20 text-stone-400 hover:text-rose-400 border border-stone-700 hover:border-rose-500/30 rounded-lg transition-all"
+              >
+                <X size={16} /> Close Map
+              </button>
+            </div>
+
+            {/* The Fully Interactive Map */}
+            <div className="flex-1 w-full h-full relative z-0">
+              <VolunteerMap interactive={true} />
+            </div>
+
           </div>
         </div>
       )}

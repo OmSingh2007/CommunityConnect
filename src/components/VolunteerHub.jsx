@@ -67,12 +67,32 @@ export default function VolunteerHub() {
     
     try {
       const surveyRef = doc(db, "surveys", assigningSurvey.id);
+      
+      // 1. Extract FCM tokens
+      const extractedTokens = selectedTeam
+        .map(vol => vol.fcmToken)
+        .filter(token => token); 
+
+      // 2. Update Firebase database status
       await updateDoc(surveyRef, {
         status: "Deployed",
-        assignedTeam: selectedTeam.map(v => v.name) 
+        assignedTeam: selectedTeam.map(v => v.name)
       });
       
-      // ADD THIS NEW BLOCK: Update the local mock data status!
+      // 3. PING THE EXPRESS SERVER TO SEND NOTIFICATIONS!
+      if (extractedTokens.length > 0) {
+        await fetch("http://localhost:5000/api/dispatch-alert", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tokens: extractedTokens,
+            category: assigningSurvey.category,
+            location: assigningSurvey.location
+          })
+        });
+      }
+
+      // Update local mock data state
       setVolunteers(prevVolunteers => 
         prevVolunteers.map(vol => 
           selectedTeam.find(selected => selected.id === vol.id) 
