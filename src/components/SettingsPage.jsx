@@ -97,7 +97,7 @@ export default function SettingsPage() {
     }
   };
 
-  if (loading) {
+  if (loading) { 
     return (
       <div className="flex items-center justify-center h-64 text-stone-400">
         <div className="flex flex-col items-center gap-2">
